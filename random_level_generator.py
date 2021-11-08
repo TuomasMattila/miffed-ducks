@@ -6,7 +6,6 @@ the sky so that they pile up on top of each other.
 import sweeperlib
 import random
 
-
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 600
 GRAVITATIONAL_ACCEL = 1.5

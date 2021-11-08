@@ -1,0 +1,11 @@
+{
+    "level": 1,
+    "targets": [
+        {
+            
+        }
+    ],
+    "obstacles": [],
+    "ducks": 5,
+    "next_level": "win"
+}
