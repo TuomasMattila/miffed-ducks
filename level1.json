@@ -81,6 +81,6 @@
             "vy": 0
         }
     ],
-    "ducks": 5,
+    "ducks": 10,
     "next_level": "level2.json"
 }

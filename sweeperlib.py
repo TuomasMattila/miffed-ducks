@@ -102,6 +102,7 @@ def load_duck(path):
     duck = pyglet.resource.image("duck.png")
     sling = pyglet.resource.image("sling.png")
     graphics["images"]["duck"] = duck
+    graphics["images"]["duck2"] = pyglet.resource.image("duck2.png") # added an extra image for animation
     graphics["images"]["sling"] = sling
 
 def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):

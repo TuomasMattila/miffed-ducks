@@ -5,6 +5,7 @@ A game where you shoot ducks at objects.
 import math
 import sweeperlib
 import json
+import random
 
 
 WIN_WIDTH = 1280
@@ -29,10 +30,16 @@ game = {
     "flight": False,
     "mouse_down": False,
     "level_data": None,
-    "level": 0,
+    "level": "menu",
     "boxes": [],
     "ducks": 5,
-    "next_level": "level1.json"
+    "next_level": None,
+    "time": 0.0
+}
+
+animation = {
+    "animation_time": 0.0,
+    "frame": "duck"
 }
 
 
@@ -40,7 +47,37 @@ def order(box):
     """
     Used to sort the list of boxes according to their height measured from the top of the box
     """
-    return box['y'] + box['h']
+    return box["y"] + box["h"]
+
+
+def create_boxes(quantity):
+    """
+    Creates a speficied number of boxes with random positions inside the specified
+    area. Boxes are represented as dictionaries with the following keys:
+    x: x coordinate of the bottom left corner
+    y: y coordinate of the bottom left corner
+    w: box width
+    h: box height
+    vy: falling velocity of the box
+    """
+    boxlist = []
+    for i in range(quantity):
+        if i < quantity / 2:
+            type = "target"
+        else:
+            type = "obstacle"
+        box = {
+            'type': type,
+            'x': random.randint(WIN_WIDTH - 400, WIN_WIDTH - 60),
+            'y': random.randint(0, WIN_HEIGHT/2),
+            'w': 40,
+            'h': 40,
+            'vy': 0
+        }
+        boxlist.append(box)
+        boxlist.sort(key=order)
+
+    return boxlist
 
 
 def drop(boxes):
@@ -51,72 +88,72 @@ def drop(boxes):
     """
     boxes.sort(key=order)
     try:
-        boxes[0]['initial_height']
+        boxes[0]["initial_height"]
     except KeyError:
         for i in range(len(boxes)):
-            boxes[i]['initial_height'] = boxes[i]['y'] + boxes[i]['h']  
+            boxes[i]["initial_height"] = boxes[i]["y"] + boxes[i]["h"]  
     for i in range(len(boxes)):
-        if boxes[i]['y'] <= 0:
-            boxes[i]['y'] = 0
-            boxes[i]['vy'] = 0
+        if boxes[i]["y"] <= 0:
+            boxes[i]["y"] = 0
+            boxes[i]["vy"] = 0
             continue
          
         allowFalling = True
         for j in range(len(boxes)):
             if i == j:
                 continue
-            if boxes[i]['initial_height'] < boxes[j]['initial_height']:
+            if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
-            if checkOverlaps(boxes[i], boxes[j]):
-                boxes[i]['y'] = boxes[j]['y'] + boxes[j]['h']
-                boxes[i]['vy'] = 0
+            if check_overlaps(boxes[i], boxes[j]):
+                boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
+                boxes[i]["vy"] = 0
                 allowFalling = False      
 
         if allowFalling:
-            boxes[i]['vy'] += GRAVITATIONAL_ACCEL
-            boxes[i]['y'] -= boxes[i]['vy']
+            boxes[i]["vy"] += GRAVITATIONAL_ACCEL
+            boxes[i]["y"] -= boxes[i]["vy"]
 
 
-def checkOverlaps(box, other):
+def check_overlaps(box, other):
     """
     Checks wether the box is overlapping the other box.
     The other box should be lower than the box.
     """
-    # Check if the other box's upper left corner is inside the box
-    if (box['x'] <= other['x'] <= box['x'] + box['w'] and 
-            box['y'] <= other['y'] + other['h'] <= box['y'] + box['h']):
+    # Check if the other box"s upper left corner is inside the box
+    if (box["x"] <= other["x"] <= box["x"] + box["w"] and 
+            box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
         return True
-    # Check if the other box's upper right corner is inside the box
-    elif (box['x'] <= other['x'] + other['w'] <= box['x'] + box['w'] and 
-            box['y'] <= other['y'] + other['h'] <= box['y'] + box['h']):
+    # Check if the other box"s upper right corner is inside the box
+    elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
+            box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
         return True
-    # Check if the other box's lower left corner is inside the box
-    elif (box['x'] <= other['x'] <= box['x'] + box['w'] and 
-            box['y'] <= other['y'] <= box['y'] + box['h']):
+    # Check if the other box"s lower left corner is inside the box
+    elif (box["x"] <= other["x"] <= box["x"] + box["w"] and 
+            box["y"] <= other["y"] <= box["y"] + box["h"]):
         return True
-    # Check if the other box's lower right corner is inside the box
-    elif (box['x'] <= other['x'] + other['w'] <= box['x'] + box['w'] and 
-            box['y'] <= other['y'] <= box['y'] + box['h']):
+    # Check if the other box"s lower right corner is inside the box
+    elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
+            box["y"] <= other["y"] <= box["y"] + box["h"]):
         return True
     # Check if the box goes on top of the other box through the bottom of the other box
-    elif (other['x'] <= box['x'] <= other['x'] + other['w'] and
-            other['x'] <= box['x'] + box['w'] <= other['x'] + other['w'] and
-            other['y'] <= box['y'] + box['h'] <= other['y'] + other['h']):
+    elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
+            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
+            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"]):
         return True    
     # Check if the box goes on top of the other box through the top of the other box
-    elif (other['x'] <= box['x'] <= other['x'] + other['w'] and
-            other['x'] <= box['x'] + box['w'] <= other['x'] + other['w'] and
-            other['y'] <= box['y'] <= other['y'] + other['h']):
+    elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
+            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
+            other["y"] <= box["y"] <= other["y"] + other["h"]):
         return True
     # Check if the box goes on top of the other box through the left side of the other box
-    elif (other['y'] <= box['y'] <= other['y'] + other['h'] and
-            other['y'] <= box['y'] + box['h'] <= other['y'] + other['h'] and
-            other['x'] <= box['x'] + box['w'] <= other['x'] + other['w']):
+    elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
+            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
+            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"]):
         return True
     # Check if the box goes on top of the other box through the right side of the other box
-    elif (other['y'] <= box['y'] <= other['y'] + other['h'] and
-            other['y'] <= box['y'] + box['h'] <= other['y'] + other['h'] and
-            other['x'] <= box['x'] <= other['x'] + other['w']):
+    elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
+            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
+            other["x"] <= box["x"] <= other["x"] + other["w"]):
         return True
     else:
         return False
@@ -134,6 +171,9 @@ def initial_state():
     game["x_velocity"] = 0
     game["y_velocity"] = 0
     game["flight"] = False
+    # TODO: If the random level game mode is on, the player should lose (the level should not be restarted)
+    if game["ducks"] == 0:
+        load_level(game["level"])
 
 
 def launch():
@@ -144,68 +184,118 @@ def launch():
     game["x_velocity"] = game["force"] * math.cos(math.radians(game["angle"]))
     game["y_velocity"] = game["force"] * math.sin(math.radians(game["angle"]))
     game["flight"] = True
+    game["ducks"] -= 1
 
 
 def update(elapsed):
     """
     This is called 60 times/second.
     """
-    if game['level'] > 0:
-        drop(game['boxes'])
+    game["time"] += elapsed
+    if not game["level"] == "menu" and not game["level"] == "win":
+        drop(game["boxes"])
     if game["flight"]:
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
         if game["y"] <= 0:
-            game["ducks"] -= 1
             initial_state()
-        for i in range(len(game['boxes'])):
-            if checkOverlaps(game, game['boxes'][i]):
-                if game['boxes'][i]['type'] == "target":
-                    game['boxes'].remove(game['boxes'][i])
-                    # TODO: Check if there are any targets left. If not, proceed to next level.
+        for i in range(len(game["boxes"])):
+            if check_overlaps(game, game["boxes"][i]):
+                if game["boxes"][i]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][i])
+                    if not count_targets(game["boxes"]):
+                        load_level(game["next_level"])
                     initial_state()
                     break
-                elif game['boxes'][i]['type'] == "obstacle":
-                    game['ducks'] -= 1 # TODO: Might implement bouncing off an obstacle instead of this if I have time.
+                elif game["boxes"][i]["type"] == "obstacle":
+                    # TODO: Might implement bouncing off an obstacle instead of this if I have time.
                     initial_state()
                     break
-        if game["ducks"] == 0:
-            load_level()
 
 
-def load_level():
+def count_targets(boxes):
     """
-    Function that loads the current level.
+    Checks whether there are any targets left in the list of boxes.
     """
-    game['boxes'] = game['level_data']['boxes'].copy()
-    game['ducks'] = game['level_data']['ducks']  
+    for box in boxes:
+        if box["type"] == "target":
+            return True
+    return False
+
+
+def load_level(level):
+    """
+    Loads a level.
+    """
+    if level == "win":
+        game["level"] = level
+        print("winner!")
+    elif level.endswith(".json"):
+        try:
+            with open(level) as file:
+                data = json.load(file)
+                game["level_data"] = data.copy()
+                game["level"] = level
+                game["boxes"] = data["boxes"].copy()
+                game["ducks"] = data["ducks"]
+                game["next_level"] = data["next_level"]
+        except IOError:
+            print("Failed to load level.")
+    else:
+        game["boxes"] = create_boxes(random.randint(5, 10))
+        game["level"] = level
+        game["ducks"] = len(game["boxes"])
+        for c in level:
+            if c.isdigit():
+                level_number = int(c) + 1
+                break
+        game["next_level"] = "level{}".format(level_number)
+
 
 
 def draw():
     """
     This function handles interface's and objects drawing.
-    You do NOT need to modify this.
     """
     sweeperlib.clear_window()
     sweeperlib.draw_background()
     sweeperlib.begin_sprite_draw()
-    if game["level"] == 0:
-        sweeperlib.draw_text("Play levels: P", 10, 500)
-        sweeperlib.draw_text("Play random levels: R", 10, 450)
-        sweeperlib.draw_text("Quit: Q", 10, 400)
-    if game["level"] == 1:
-        sweeperlib.prepare_sprite("duck", game["x"], game["y"])
+    if game["level"] == "menu":
+        sweeperlib.draw_text("A Wee Bit Miffed Ducks", 40, WIN_HEIGHT - 150, size=40)
+        sweeperlib.prepare_sprite("duck", 650, WIN_HEIGHT - 140)
+        sweeperlib.draw_text("Play levels: P", 40, 184)
+        sweeperlib.draw_text("Play random levels: R", 40, 112)
+        sweeperlib.draw_text("Quit: Q", 40, 40)
+        sweeperlib.draw_text("Controls:", WIN_WIDTH - 350, 400)
+        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 350, 328)
+        sweeperlib.draw_text("←/→: Set angle", WIN_WIDTH - 350, 256)
+        sweeperlib.draw_text("↑/↓: Set Force", WIN_WIDTH - 350, 184)
+        sweeperlib.draw_text("Space: Launch", WIN_WIDTH - 350, 112)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 350, 40)
+    if game["level"] == "win":
+        sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -72)
+        sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -144)
+    if not game["level"] == "menu" and not game["level"] == "win":         
+        if game["flight"]:
+            if game["time"] >= animation["animation_time"] + 0.2:
+                animation["animation_time"] = game["time"]
+                if animation["frame"] == "duck":
+                    animation["frame"] = "duck2"
+                elif animation["frame"] == "duck2":
+                    animation["frame"] = "duck"
+            sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
+        else:
+            sweeperlib.prepare_sprite("duck", game["x"], game["y"])
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, 0)
-        for i in range(len(game['boxes'])):
-            if game["boxes"][i]['type'] == "target":
-                sweeperlib.prepare_sprite("x", game['boxes'][i]['x'], game['boxes'][i]['y'])
-            elif game["boxes"][i]['type'] == "obstacle":
-                sweeperlib.prepare_sprite(" ", game['boxes'][i]['x'], game['boxes'][i]['y'])
-        sweeperlib.draw_sprites()
-        sweeperlib.draw_text("Q: Quit  | R: Reset |  ←/→: Set angle |  ↑/↓: Set Force  |  Space: Launch | M: Menu", 10, WIN_HEIGHT - 40, size=20)
-        sweeperlib.draw_text("Angle: {:.0f}°\tForce: {:.0f}\tDucks: {}".format(game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 80, size=20)
-        # TODO: Make sure the player knows the current level. Also make the texts better looking and possibly leave the instructions to the main menu only.
+        for i in range(len(game["boxes"])):
+            if game["boxes"][i]["type"] == "target":
+                sweeperlib.prepare_sprite("x", game["boxes"][i]["x"], game["boxes"][i]["y"])
+            elif game["boxes"][i]["type"] == "obstacle":
+                sweeperlib.prepare_sprite(" ", game["boxes"][i]["x"], game["boxes"][i]["y"])
+        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 40, size=20)
+    sweeperlib.draw_sprites()
 
 
 def mouse_release_handler(x, y, button, modifiers):
@@ -213,7 +303,7 @@ def mouse_release_handler(x, y, button, modifiers):
     If the player is using mouse controls, this function is called when a mouse button is released.
     The function determines the angle and the force with which the duck will be launched and launches it.
     """
-    if not game["flight"] and game["level"] > 0:
+    if not game["flight"] and not game["level"] == "menu" and not game["level"] == "win":
         game["mouse_down"] = False
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
@@ -234,11 +324,11 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     This function is called when the mouse is moved while one of its buttons is
     pressed down. Moves a box on the screen the same amount as the cursor moved.
     """
-    if not game["flight"] and game["level"] > 0:
+    if not game["flight"] and not game["level"] == "menu" and not game["level"] == "win":
         game["mouse_down"] = True
         game["x"] += dx
         game["y"] += dy
-        game['x'], game['y'] = clamp_inside_circle(game['x'], game['y'], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
+        game["x"], game["y"] = clamp_inside_circle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
 
@@ -248,7 +338,7 @@ def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
     point is already inside the circle. If it is, its coordinates 
     are simply returned as they are. However, if the point is outside 
     the circle, it is "pulled" to the circle's perimeter. In 
-    doing so, the angle from the circle's center must be maintained 
+    doing so, the angle from the circle"s center must be maintained 
     while the distance is set exactly to the circle's radius."""
     distance = calculate_distance(x, y, circle_center_x, circle_center_y)
     if distance > radius:
@@ -289,23 +379,22 @@ def keypress(symbol, modifiers):
         sweeperlib.close()
 
     if symbol == key.M:
-        game["level"] = 0
+        initial_state()
+        game["level"] = "menu"
 
     # Menu keys
-    if game["level"] == 0:
+    if game["level"] == "menu":
         if symbol == key.P:
-            game["level"] = 1
-            with open("level1.json") as file:
-                level = json.load(file)
-                game["level_data"] = level.copy()
-                game['boxes'] = level['boxes'].copy()
-                game["ducks"] = level["ducks"]
-                game['next_level'] = level["next_level"]
+            load_level("level1.json")
         if symbol == key.R:
-            print("Available soon...")
+            load_level("level1")
 
     # Game keys
-    if game["level"] > 0:
+    if not game["level"] == "menu" and not game["level"] == "win":
+        if symbol == key.R:
+            initial_state()
+            load_level(game["level"])
+    
         if symbol == key.RIGHT:
             game["angle"] -= 10
             if game["angle"] < 0:
