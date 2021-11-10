@@ -304,9 +304,9 @@ def draw():
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, 0)
         for i in range(len(game["boxes"])):
             if game["boxes"][i]["type"] == "target":
-                sweeperlib.prepare_sprite("x", game["boxes"][i]["x"], game["boxes"][i]["y"])
+                sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
             elif game["boxes"][i]["type"] == "obstacle":
-                sweeperlib.prepare_sprite(" ", game["boxes"][i]["x"], game["boxes"][i]["y"])
+                sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 40, size=20)
     sweeperlib.draw_sprites()
 
