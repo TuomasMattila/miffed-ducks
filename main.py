@@ -13,7 +13,8 @@ BG_COLOR = (200, 255, 255, 255)
 GRAVITATIONAL_ACCEL = 1.5
 LAUNCH_X = 100
 LAUNCH_Y = 100
-FORCE_FACTOR = 0.4
+DRAG_RADIUS = 100
+FORCE_FACTOR = 0.5
 
 
 game = {
@@ -236,14 +237,46 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     if not game["flight"] and game["level"] > 0:
         game["mouse_down"] = True
         game["x"] += dx
-        # TODO: Use the functions in h3: duck_assignment_inner_circle.py to restrict the drag into a circle
-        if game['x'] <= 0:
-            game['x'] = 0
         game["y"] += dy
-        if game['y'] <= 0:
-            game['y'] = 0
+        game['x'], game['y'] = clamp_inside_circle(game['x'], game['y'], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
+
+
+def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
+    """First the function finds out whether the given 
+    point is already inside the circle. If it is, its coordinates 
+    are simply returned as they are. However, if the point is outside 
+    the circle, it is "pulled" to the circle's perimeter. In 
+    doing so, the angle from the circle's center must be maintained 
+    while the distance is set exactly to the circle's radius."""
+    distance = calculate_distance(x, y, circle_center_x, circle_center_y)
+    if distance > radius:
+        angle = math.atan(abs(y - circle_center_y) / abs(x - circle_center_x))
+        if circle_center_x < x:  
+            angle += (math.pi / 2 - angle) * 2
+        if circle_center_y < y:
+            angle = angle * -1
+        ray = distance - radius
+        move_x, move_y = convert_to_xy(angle, ray)
+        return x + move_x, y + move_y
+    else:
+        return x, y
+
+
+def calculate_distance(x1, y1, x2, y2):
+    """
+    Calculates the distance between two points and returns it.
+    """
+    return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
+
+
+def convert_to_xy(angle, ray):
+    """Converts polar coordinates to cartesian coordinates.
+    Note that the angle given as a parameter must be a radian value."""
+    x = ray * math.cos(angle)
+    y = ray * math.sin(angle)
+    return x, y
 
 
 def keypress(symbol, modifiers):
