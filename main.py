@@ -37,7 +37,8 @@ game = {
     "ducks": 5,
     "next_level": None,
     "time": 0.0,
-    "random_levels_passed": 0
+    "random_levels_passed": 0,
+    "used_ducks": []
 }
 
 animation = {
@@ -174,7 +175,6 @@ def initial_state():
     game["x_velocity"] = 0
     game["y_velocity"] = 0
     game["flight"] = False
-    # TODO: If the random level game mode is on, the player should lose (the level should not be restarted)
     if game["ducks"] == 0:
         if game["level"].endswith(".json"):
             load_level(game["level"])
@@ -187,10 +187,11 @@ def launch():
     Launches a duck and calculates its starting velocity. Stores x and y velocity
     components to the game dictionary.
     """
-    game["x_velocity"] = game["force"] * math.cos(math.radians(game["angle"]))
-    game["y_velocity"] = game["force"] * math.sin(math.radians(game["angle"]))
-    game["flight"] = True
-    game["ducks"] -= 1
+    if not game["flight"]:
+        game["x_velocity"] = game["force"] * math.cos(math.radians(game["angle"]))
+        game["y_velocity"] = game["force"] * math.sin(math.radians(game["angle"]))
+        game["flight"] = True
+        game["ducks"] -= 1
 
 
 def update(elapsed):
@@ -200,30 +201,58 @@ def update(elapsed):
     game["time"] += elapsed
     if game["level"].startswith("level"):
         drop(game["boxes"])
+        drop_ducks(game["used_ducks"])
     if game["flight"]:
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
         if game["y"] <= 0:
+            game["used_ducks"].append({
+                "x": game["x"],
+                "y": game["y"],
+                "vy": 0
+            })
             initial_state()
         for i in range(len(game["boxes"])):
             if check_overlaps(game, game["boxes"][i]):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     sound.play()
+                    game["used_ducks"].append({
+                        "x": game["x"],
+                        "y": game["y"],
+                        "vy": 0
+                    })
                     if not targets_remaining(game["boxes"]):
                         load_level(game["next_level"])
                     initial_state()
                     break
                 elif game["boxes"][i]["type"] == "obstacle":
                     # TODO: Might implement bouncing off an obstacle instead of this if I have time.
+                    game["used_ducks"].append({
+                        "x": game["x"],
+                        "y": game["y"],
+                        "vy": 0
+                    })
                     initial_state()
                     break
 
 
+def drop_ducks(ducks):
+    """
+    Makes used ducks fall down to the ground.
+    """
+    for duck in ducks:
+        if duck["y"] <= 0:
+            duck["y"] = 0
+            continue
+        duck["vy"] -= GRAVITATIONAL_ACCEL
+        duck["y"] += duck["vy"]
+
+
 def targets_remaining(boxes):
     """
-    Checks whether there are any targets left in the list of boxes.
+    Checks if there are any targets left in the list of boxes.
     """
     for box in boxes:
         if box["type"] == "target":
@@ -235,9 +264,11 @@ def load_level(level):
     """
     Loads a level.
     """
+    game["used_ducks"].clear()
+    # If the player wins the game
     if level == "win":
         game["level"] = level
-        print("winner!")
+    # Normal levels
     elif level.endswith(".json"):
         try:
             with open(level) as file:
@@ -249,6 +280,7 @@ def load_level(level):
                 game["next_level"] = data["next_level"]
         except IOError:
             print("Failed to load level.")
+    # Random levels
     else:
         game["boxes"] = create_boxes(random.randint(5, 10))
         game["level"] = level
@@ -290,7 +322,8 @@ def draw():
         sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 -72)
         sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 -144)
         sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)        
-    if game["level"].startswith("level"):         
+    if game["level"].startswith("level"):
+        # Duck animation         
         if game["flight"]:
             if game["time"] >= animation["animation_time"] + 0.2:
                 animation["animation_time"] = game["time"]
@@ -308,6 +341,8 @@ def draw():
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 40, size=20)
+        for duck in game["used_ducks"]:
+            sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
     sweeperlib.draw_sprites()
 
 
@@ -347,12 +382,14 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
 
 
 def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
-    """First the function finds out whether the given 
+    """
+    First the function finds out whether the given 
     point is already inside the circle. If it is, its coordinates 
     are simply returned as they are. However, if the point is outside 
     the circle, it is "pulled" to the circle's perimeter. In 
     doing so, the angle from the circle"s center must be maintained 
-    while the distance is set exactly to the circle's radius."""
+    while the distance is set exactly to the circle's radius.
+    """
     distance = calculate_distance(x, y, circle_center_x, circle_center_y)
     if distance > radius:
         angle = math.atan(abs(y - circle_center_y) / abs(x - circle_center_x))
@@ -375,11 +412,22 @@ def calculate_distance(x1, y1, x2, y2):
 
 
 def convert_to_xy(angle, ray):
-    """Converts polar coordinates to cartesian coordinates.
-    Note that the angle given as a parameter must be a radian value."""
+    """
+    Converts polar coordinates to cartesian coordinates.
+    Note that the angle given as a parameter must be a radian value.
+    """
     x = ray * math.cos(angle)
     y = ray * math.sin(angle)
     return x, y
+
+
+def update_position():
+    """
+    Updates the duck's position when using arrow keys to adjust angle and force.
+    """
+    x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
+    game["x"] = LAUNCH_X - x * 2 
+    game["y"] = LAUNCH_Y - y * 2
 
 
 def keypress(symbol, modifiers):
@@ -412,19 +460,23 @@ def keypress(symbol, modifiers):
             game["angle"] -= 5
             if game["angle"] < 0:
                 game["angle"] = 350
+            update_position()
         elif symbol == key.LEFT:
             game["angle"] += 5
             if game["angle"] > 350:
                 game["angle"] = 0
+            update_position()
 
         if symbol == key.UP:
             if game["force"] < 50:
                 game["force"] += 5
+            update_position()
         elif symbol == key.DOWN:
             if game["force"] >= 5:
                 game["force"] -= 5
             else:
                 game["force"] = 0
+            update_position()
 
         if symbol == key.SPACE:
             launch()
