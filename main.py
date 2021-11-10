@@ -158,25 +158,25 @@ def update(elapsed):
         if game["y"] <= 0:
             game["ducks"] -= 1
             initial_state()
-            if game["ducks"] == 0:
-                load_level()
         for i in range(len(game['boxes'])):
             if checkOverlaps(game, game['boxes'][i]):
                 if game['boxes'][i]['type'] == "target":
-                    print("Target hit!")
                     game['boxes'].remove(game['boxes'][i])
+                    # TODO: Check if there are any targets left. If not, proceed to next level.
                     initial_state()
                     break
                 elif game['boxes'][i]['type'] == "obstacle":
-                    print("Obstacle hit!")
-                    game['ducks'] -= 1 # TODO: Might implement bouncing off an obstacle instead of this if I have time
+                    game['ducks'] -= 1 # TODO: Might implement bouncing off an obstacle instead of this if I have time.
                     initial_state()
-                    if game["ducks"] == 0:
-                        load_level()
                     break
+        if game["ducks"] == 0:
+            load_level()
 
 
 def load_level():
+    """
+    Function that loads the current level.
+    """
     game['boxes'] = game['level_data']['boxes'].copy()
     game['ducks'] = game['level_data']['ducks']  
 
@@ -204,10 +204,14 @@ def draw():
         sweeperlib.draw_sprites()
         sweeperlib.draw_text("Q: Quit  | R: Reset |  ←/→: Set angle |  ↑/↓: Set Force  |  Space: Launch | M: Menu", 10, WIN_HEIGHT - 40, size=20)
         sweeperlib.draw_text("Angle: {:.0f}°\tForce: {:.0f}\tDucks: {}".format(game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 80, size=20)
-
+        # TODO: Make sure the player knows the current level. Also make the texts better looking and possibly leave the instructions to the main menu only.
 
 
 def mouse_release_handler(x, y, button, modifiers):
+    """
+    If the player is using mouse controls, this function is called when a mouse button is released.
+    The function determines the angle and the force with which the duck will be launched and launches it.
+    """
     if not game["flight"] and game["level"] > 0:
         game["mouse_down"] = False
         game["angle"] = set_angle()
@@ -216,6 +220,9 @@ def mouse_release_handler(x, y, button, modifiers):
 
 
 def set_angle():
+    """
+    Sets the launch angle if player is using mouse controls.
+    """
     x_distance = LAUNCH_X - game["x"]
     y_distance = LAUNCH_Y - game["y"]
     return math.degrees(math.atan2(y_distance, x_distance))
@@ -229,6 +236,7 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     if not game["flight"] and game["level"] > 0:
         game["mouse_down"] = True
         game["x"] += dx
+        # TODO: Use the functions in h3: duck_assignment_inner_circle.py to restrict the drag into a circle
         if game['x'] <= 0:
             game['x'] = 0
         game["y"] += dy
@@ -250,6 +258,7 @@ def keypress(symbol, modifiers):
     if symbol == key.M:
         game["level"] = 0
 
+    # Menu keys
     if game["level"] == 0:
         if symbol == key.P:
             game["level"] = 1
@@ -262,6 +271,7 @@ def keypress(symbol, modifiers):
         if symbol == key.R:
             print("Available soon...")
 
+    # Game keys
     if game["level"] > 0:
         if symbol == key.RIGHT:
             game["angle"] -= 10
