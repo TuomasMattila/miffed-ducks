@@ -6,6 +6,7 @@ import math
 import sweeperlib
 import json
 import random
+import pyglet
 
 
 WIN_WIDTH = 1280
@@ -17,6 +18,7 @@ LAUNCH_Y = 100
 DRAG_RADIUS = 100
 FORCE_FACTOR = 0.5
 
+sound = pyglet.media.load("coin.wav", streaming=False)
 
 game = {
     "x": LAUNCH_X,
@@ -34,7 +36,8 @@ game = {
     "boxes": [],
     "ducks": 5,
     "next_level": None,
-    "time": 0.0
+    "time": 0.0,
+    "random_levels_passed": 0
 }
 
 animation = {
@@ -173,7 +176,10 @@ def initial_state():
     game["flight"] = False
     # TODO: If the random level game mode is on, the player should lose (the level should not be restarted)
     if game["ducks"] == 0:
-        load_level(game["level"])
+        if game["level"].endswith(".json"):
+            load_level(game["level"])
+        else:
+            game["level"] = "lose"
 
 
 def launch():
@@ -192,7 +198,7 @@ def update(elapsed):
     This is called 60 times/second.
     """
     game["time"] += elapsed
-    if not game["level"] == "menu" and not game["level"] == "win":
+    if game["level"].startswith("level"):
         drop(game["boxes"])
     if game["flight"]:
         game["x"] += game["x_velocity"]
@@ -204,7 +210,8 @@ def update(elapsed):
             if check_overlaps(game, game["boxes"][i]):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
-                    if not count_targets(game["boxes"]):
+                    sound.play()
+                    if not targets_remaining(game["boxes"]):
                         load_level(game["next_level"])
                     initial_state()
                     break
@@ -214,7 +221,7 @@ def update(elapsed):
                     break
 
 
-def count_targets(boxes):
+def targets_remaining(boxes):
     """
     Checks whether there are any targets left in the list of boxes.
     """
@@ -248,9 +255,10 @@ def load_level(level):
         game["ducks"] = len(game["boxes"])
         for c in level:
             if c.isdigit():
-                level_number = int(c) + 1
+                level_number = int(c)
                 break
-        game["next_level"] = "level{}".format(level_number)
+        game["next_level"] = "level{}".format(level_number + 1)
+        game["random_levels_passed"] = level_number - 1
 
 
 
@@ -277,7 +285,12 @@ def draw():
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
         sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -72)
         sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -144)
-    if not game["level"] == "menu" and not game["level"] == "win":         
+    if game["level"] == "lose":
+        sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
+        sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 -72)
+        sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 -144)
+        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)        
+    if game["level"].startswith("level"):         
         if game["flight"]:
             if game["time"] >= animation["animation_time"] + 0.2:
                 animation["animation_time"] = game["time"]
@@ -303,7 +316,7 @@ def mouse_release_handler(x, y, button, modifiers):
     If the player is using mouse controls, this function is called when a mouse button is released.
     The function determines the angle and the force with which the duck will be launched and launches it.
     """
-    if not game["flight"] and not game["level"] == "menu" and not game["level"] == "win":
+    if not game["flight"] and game["level"].startswith("level"):
         game["mouse_down"] = False
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
@@ -324,7 +337,7 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     This function is called when the mouse is moved while one of its buttons is
     pressed down. Moves a box on the screen the same amount as the cursor moved.
     """
-    if not game["flight"] and not game["level"] == "menu" and not game["level"] == "win":
+    if not game["flight"] and game["level"].startswith("level"):
         game["mouse_down"] = True
         game["x"] += dx
         game["y"] += dy
@@ -390,17 +403,17 @@ def keypress(symbol, modifiers):
             load_level("level1")
 
     # Game keys
-    if not game["level"] == "menu" and not game["level"] == "win":
+    if game["level"].startswith("level"):
         if symbol == key.R:
             initial_state()
             load_level(game["level"])
     
         if symbol == key.RIGHT:
-            game["angle"] -= 10
+            game["angle"] -= 5
             if game["angle"] < 0:
                 game["angle"] = 350
         elif symbol == key.LEFT:
-            game["angle"] += 10
+            game["angle"] += 5
             if game["angle"] > 350:
                 game["angle"] = 0
 
