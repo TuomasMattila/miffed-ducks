@@ -17,6 +17,7 @@ LAUNCH_X = 100
 LAUNCH_Y = 100
 DRAG_RADIUS = 100
 FORCE_FACTOR = 0.5
+ELASTICITY = 0.5
 
 sound = pyglet.media.load("coin.wav", streaming=False)
 
@@ -43,7 +44,8 @@ game = {
 
 animation = {
     "animation_time": 0.0,
-    "frame": "duck"
+    "frame": "duck",
+    "points": []
 }
 
 
@@ -108,7 +110,7 @@ def drop(boxes):
                 continue
             if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
-            if check_overlaps(boxes[i], boxes[j]):
+            if not is_overlapping(boxes[i], boxes[j]) == False:
                 boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
                 boxes[i]["vy"] = 0
                 allowFalling = False      
@@ -118,47 +120,47 @@ def drop(boxes):
             boxes[i]["y"] -= boxes[i]["vy"]
 
 
-def check_overlaps(box, other):
+def is_overlapping(box, other):
     """
-    Checks wether the box is overlapping the other box.
-    The other box should be lower than the box.
+    Checks whether the box is overlapping the other box.
+    Returns the direction to which the duck has to bounce from an obstacle.
     """
     # Check if the other box"s upper left corner is inside the box
     if (box["x"] <= other["x"] <= box["x"] + box["w"] and 
             box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
-        return True
+        return "left"
     # Check if the other box"s upper right corner is inside the box
     elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
             box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
-        return True
+        return "right"
     # Check if the other box"s lower left corner is inside the box
     elif (box["x"] <= other["x"] <= box["x"] + box["w"] and 
             box["y"] <= other["y"] <= box["y"] + box["h"]):
-        return True
+        return "left"
     # Check if the other box"s lower right corner is inside the box
     elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
             box["y"] <= other["y"] <= box["y"] + box["h"]):
-        return True
+        return "right"
     # Check if the box goes on top of the other box through the bottom of the other box
     elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
             other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
             other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"]):
-        return True    
+        return "down"   
     # Check if the box goes on top of the other box through the top of the other box
     elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
             other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
             other["y"] <= box["y"] <= other["y"] + other["h"]):
-        return True
+        return "up"
     # Check if the box goes on top of the other box through the left side of the other box
     elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
             other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
             other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"]):
-        return True
+        return "left"
     # Check if the box goes on top of the other box through the right side of the other box
     elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
             other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
             other["x"] <= box["x"] <= other["x"] + other["w"]):
-        return True
+        return "right"
     else:
         return False
 
@@ -192,6 +194,7 @@ def launch():
         game["y_velocity"] = game["force"] * math.sin(math.radians(game["angle"]))
         game["flight"] = True
         game["ducks"] -= 1
+        animation["points"].clear()
 
 
 def update(elapsed):
@@ -203,6 +206,8 @@ def update(elapsed):
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
+        animation["points"].append({"x": game["x"], "y": game["y"]})
+        # TODO: Before actually changing position, we should check if the duck is about to go through a box
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
@@ -214,28 +219,64 @@ def update(elapsed):
             })
             initial_state()
         for i in range(len(game["boxes"])):
-            if check_overlaps(game, game["boxes"][i]):
+            overlap = is_overlapping(game, game["boxes"][i])
+            if not overlap == False:
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     sound.play()
-                    game["used_ducks"].append({
-                        "x": game["x"],
-                        "y": game["y"],
-                        "vy": 0
-                    })
                     if not targets_remaining(game["boxes"]):
                         load_level(game["next_level"])
-                    initial_state()
                     break
                 elif game["boxes"][i]["type"] == "obstacle":
+                    bounce(game["boxes"][i], overlap)
                     # TODO: Might implement bouncing off an obstacle instead of this if I have time.
-                    game["used_ducks"].append({
-                        "x": game["x"],
-                        "y": game["y"],
-                        "vy": 0
-                    })
-                    initial_state()
+                    #game["used_ducks"].append({
+                    #    "x": game["x"],
+                    #    "y": game["y"],
+                    #    "vy": 0
+                    #})
+                    #initial_state()
                     break
+
+
+def bounce(obstacle, direction):
+    # TODO: First, find out if there is a box on top of the obstacle. If there is, do not bounce up from this obstacle.
+    do_not_bounce_up = False
+    print("Duck number", game["ducks"] + 1)
+    if direction == "left":
+        for box in game["boxes"]:
+            if (box["y"] == obstacle["y"] + obstacle["h"] and
+                box["x"] <= obstacle["x"] and
+                obstacle["x"] <= box["x"] + box["w"] <= obstacle["x"] + obstacle["w"]):
+                    do_not_bounce_up = True
+        print("Left", do_not_bounce_up)
+        if obstacle["x"] <= game["x"] + game["w"] / 2 and not do_not_bounce_up:
+            game["y"] = obstacle["y"] + obstacle["h"]
+            game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+        else:
+            game["x"] = obstacle["x"] - obstacle["w"]
+            game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+    elif direction == "right":
+        for box in game["boxes"]:
+            if (box["y"] == obstacle["y"] + obstacle["h"] and
+                box["x"] + box["w"] >= obstacle["x"] + obstacle["w"] and
+                obstacle["x"] <= box["x"] <= obstacle["x"] + obstacle["w"]):
+                    do_not_bounce_up = True
+        print("Right", do_not_bounce_up)
+        if obstacle["x"] + obstacle["w"] >= game["x"] + game["w"] / 2 and not do_not_bounce_up:
+            game["y"] = obstacle["y"] + obstacle["h"]
+            game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+        else:
+            game["x"] = obstacle["x"] + obstacle["w"]
+            game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+    elif direction == "up":
+        print("Up")
+        game["y"] = obstacle["y"] + obstacle["h"]
+        game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+    elif direction == "down":
+        print("Down")
+        game["y"] = obstacle["y"] - obstacle["h"]
+        game["y_velocity"] = game["y_velocity"] * -ELASTICITY
 
 
 def drop_ducks(ducks):
@@ -341,8 +382,11 @@ def draw():
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 40, size=20)
+        # TODO: Check that these ducks and points are cleared everytime the level changes etc...
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
+        for point in animation["points"]:
+            sweeperlib.draw_text("o", point["x"], point["y"], color=(255, 255, 255, 255), size=10)
     sweeperlib.draw_sprites()
 
 
