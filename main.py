@@ -206,7 +206,7 @@ def update(elapsed):
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
-        animation["points"].append({"x": game["x"], "y": game["y"]})
+        animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
         # TODO: Before actually changing position, we should check if the duck is about to go through a box
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
@@ -306,6 +306,8 @@ def load_level(level):
     Loads a level.
     """
     game["used_ducks"].clear()
+    animation["points"].clear()
+    initial_state()
     # If the player wins the game
     if level == "win":
         game["level"] = level
