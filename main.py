@@ -225,6 +225,7 @@ def update(elapsed):
                     game["boxes"].remove(game["boxes"][i])
                     sound.play()
                     if not targets_remaining(game["boxes"]):
+                        initial_state()
                         load_level(game["next_level"])
                     break
                 elif game["boxes"][i]["type"] == "obstacle":
@@ -307,7 +308,6 @@ def load_level(level):
     """
     game["used_ducks"].clear()
     animation["points"].clear()
-    initial_state()
     # If the player wins the game
     if level == "win":
         game["level"] = level
