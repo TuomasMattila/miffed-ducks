@@ -19,7 +19,7 @@ DRAG_RADIUS = 100
 FORCE_FACTOR = 0.5
 ELASTICITY = 0.5
 
-sound = pyglet.media.load("coin.wav", streaming=False)
+box_breaking_sound = pyglet.media.load("box_breaking_sound.wav", streaming=False)
 
 game = {
     "x": LAUNCH_X,
@@ -110,7 +110,7 @@ def drop(boxes):
                 continue
             if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
-            if not is_overlapping(boxes[i], boxes[j]) == False:
+            if is_overlapping(boxes[i], boxes[j]):
                 boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
                 boxes[i]["vy"] = 0
                 allowFalling = False      
@@ -220,10 +220,10 @@ def update(elapsed):
             initial_state()
         for i in range(len(game["boxes"])):
             overlap = is_overlapping(game, game["boxes"][i])
-            if not overlap == False:
+            if overlap:
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
-                    sound.play()
+                    box_breaking_sound.play()
                     if not targets_remaining(game["boxes"]):
                         initial_state()
                         load_level(game["next_level"])
