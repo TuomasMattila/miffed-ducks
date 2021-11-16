@@ -241,39 +241,50 @@ def update(elapsed):
 
 
 def bounce(obstacle, direction):
-    # TODO: First, find out if there is a box on top of the obstacle. If there is, do not bounce up from this obstacle.
-    do_not_bounce_up = False
+    prevent_bouncing_up = False
     print("Duck number", game["ducks"] + 1)
+
     if direction == "left":
+        # First, find out if there is a box on top of the obstacle. If there is, do not bounce up from this obstacle.
         for box in game["boxes"]:
             if (box["y"] == obstacle["y"] + obstacle["h"] and
                 box["x"] <= obstacle["x"] and
                 obstacle["x"] <= box["x"] + box["w"] <= obstacle["x"] + obstacle["w"]):
-                    do_not_bounce_up = True
-        print("Left", do_not_bounce_up)
-        if obstacle["x"] <= game["x"] + game["w"] / 2 and not do_not_bounce_up:
+                    prevent_bouncing_up = True
+        print("Left, prevent bouncing up:", prevent_bouncing_up)
+        if obstacle["x"] <= game["x"] + game["w"] / 2 and not prevent_bouncing_up:
             game["y"] = obstacle["y"] + obstacle["h"]
             game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+        elif game["x_velocity"] < 0:
+            game["x"] = obstacle["x"] + obstacle["w"]
+            game["x_velocity"] = game["x_velocity"] * -ELASTICITY
         else:
             game["x"] = obstacle["x"] - obstacle["w"]
             game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+
     elif direction == "right":
+        # First, find out if there is a box on top of the obstacle. If there is, do not bounce up from this obstacle.
         for box in game["boxes"]:
             if (box["y"] == obstacle["y"] + obstacle["h"] and
                 box["x"] + box["w"] >= obstacle["x"] + obstacle["w"] and
                 obstacle["x"] <= box["x"] <= obstacle["x"] + obstacle["w"]):
-                    do_not_bounce_up = True
-        print("Right", do_not_bounce_up)
-        if obstacle["x"] + obstacle["w"] >= game["x"] + game["w"] / 2 and not do_not_bounce_up:
+                    prevent_bouncing_up = True
+        print("Right", prevent_bouncing_up)
+        if obstacle["x"] + obstacle["w"] >= game["x"] + game["w"] / 2 and not prevent_bouncing_up:
             game["y"] = obstacle["y"] + obstacle["h"]
             game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+        elif game["x_velocity"] > 0:
+            game["x"] = obstacle["x"] - obstacle["w"]
+            game["x_velocity"] = game["x_velocity"] * -ELASTICITY
         else:
             game["x"] = obstacle["x"] + obstacle["w"]
             game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+
     elif direction == "up":
         print("Up")
         game["y"] = obstacle["y"] + obstacle["h"]
         game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+
     elif direction == "down":
         print("Down")
         game["y"] = obstacle["y"] - obstacle["h"]
