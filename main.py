@@ -9,14 +9,15 @@ import random
 import pyglet
 
 
-WIN_WIDTH = 1280
-WIN_HEIGHT = 720
+WIN_WIDTH = 1920
+WIN_HEIGHT = 1080
+GROUND_LEVEL = 80
 BG_COLOR = (200, 255, 255, 255)
 GRAVITATIONAL_ACCEL = 1.5
 LAUNCH_X = 100
-LAUNCH_Y = 100
+LAUNCH_Y = 100 + GROUND_LEVEL
 DRAG_RADIUS = 100
-FORCE_FACTOR = 0.5
+FORCE_FACTOR = 0.6
 ELASTICITY = 0.5
 
 box_breaking_sound = pyglet.media.load("box_breaking_sound.wav", streaming=False)
@@ -39,7 +40,8 @@ game = {
     "next_level": None,
     "time": 0.0,
     "random_levels_passed": 0,
-    "used_ducks": []
+    "used_ducks": [],
+    "fullscreen": True
 }
 
 animation = {
@@ -75,7 +77,7 @@ def create_boxes(quantity):
         box = {
             'type': type,
             'x': random.randint(WIN_WIDTH - 400, WIN_WIDTH - 60),
-            'y': random.randint(0, WIN_HEIGHT/2),
+            'y': random.randint(80, WIN_HEIGHT/2),
             'w': 40,
             'h': 40,
             'vy': 0
@@ -99,8 +101,8 @@ def drop(boxes):
         for i in range(len(boxes)):
             boxes[i]["initial_height"] = boxes[i]["y"] + boxes[i]["h"]  
     for i in range(len(boxes)):
-        if boxes[i]["y"] <= 0:
-            boxes[i]["y"] = 0
+        if boxes[i]["y"] <= GROUND_LEVEL:
+            boxes[i]["y"] = GROUND_LEVEL
             boxes[i]["vy"] = 0
             continue
          
@@ -190,8 +192,8 @@ def launch():
     components to the game dictionary.
     """
     if not game["flight"]:
-        game["x_velocity"] = game["force"] * math.cos(math.radians(game["angle"]))
-        game["y_velocity"] = game["force"] * math.sin(math.radians(game["angle"]))
+        game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
+        game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
         game["flight"] = True
         game["ducks"] -= 1
         animation["points"].clear()
@@ -211,7 +213,7 @@ def update(elapsed):
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        if game["y"] <= 0:
+        if game["y"] <= GROUND_LEVEL:
             game["used_ducks"].append({
                 "x": game["x"],
                 "y": game["y"],
@@ -296,8 +298,8 @@ def drop_ducks(ducks):
     Makes used ducks fall down to the ground.
     """
     for duck in ducks:
-        if duck["y"] <= 0:
-            duck["y"] = 0
+        if duck["y"] <= GROUND_LEVEL:
+            duck["y"] = GROUND_LEVEL
             continue
         duck["vy"] -= GRAVITATIONAL_ACCEL
         duck["y"] += duck["vy"]
@@ -358,15 +360,16 @@ def draw():
     if game["level"] == "menu":
         sweeperlib.draw_text("A Wee Bit Miffed Ducks", 40, WIN_HEIGHT - 150, size=40)
         sweeperlib.prepare_sprite("duck", 650, WIN_HEIGHT - 140)
-        sweeperlib.draw_text("Play levels: P", 40, 184)
-        sweeperlib.draw_text("Play random levels: R", 40, 112)
-        sweeperlib.draw_text("Quit: Q", 40, 40)
-        sweeperlib.draw_text("Controls:", WIN_WIDTH - 350, 400)
-        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 350, 328)
-        sweeperlib.draw_text("←/→: Set angle", WIN_WIDTH - 350, 256)
-        sweeperlib.draw_text("↑/↓: Set Force", WIN_WIDTH - 350, 184)
-        sweeperlib.draw_text("Space: Launch", WIN_WIDTH - 350, 112)
-        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 350, 40)
+        sweeperlib.draw_text("Play levels: P", 40, 354)
+        sweeperlib.draw_text("Play random levels: R", 40, 282)
+        sweeperlib.draw_text("Quit: Q", 40, 210)
+        sweeperlib.draw_text("Controls:", WIN_WIDTH - 550, 642)
+        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 550, 570)
+        sweeperlib.draw_text("←/→: Set angle", WIN_WIDTH - 550, 498)
+        sweeperlib.draw_text("↑/↓: Set Force", WIN_WIDTH - 550, 426)
+        sweeperlib.draw_text("Space: Launch", WIN_WIDTH - 550, 354)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 550, 282)
+        sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 550, 210)
     if game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
         sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -72)
@@ -388,7 +391,7 @@ def draw():
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
-        sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, 0)
+        sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
         for i in range(len(game["boxes"])):
             if game["boxes"][i]["type"] == "target":
                 sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
@@ -411,7 +414,7 @@ def mouse_release_handler(x, y, button, modifiers):
     if not game["flight"] and game["level"].startswith("level"):
         game["mouse_down"] = False
         game["angle"] = set_angle()
-        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
+        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
         launch()
 
 
@@ -435,7 +438,7 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
         game["y"] += dy
         game["x"], game["y"] = clamp_inside_circle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
         game["angle"] = set_angle()
-        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2)) * FORCE_FACTOR
+        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
 
 
 def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
@@ -483,8 +486,8 @@ def update_position():
     Updates the duck's position when using arrow keys to adjust angle and force.
     """
     x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
-    game["x"] = LAUNCH_X - x * 2 
-    game["y"] = LAUNCH_Y - y * 2
+    game["x"] = LAUNCH_X - x
+    game["y"] = LAUNCH_Y - y
 
 
 def keypress(symbol, modifiers):
@@ -499,6 +502,14 @@ def keypress(symbol, modifiers):
     if symbol == key.M:
         initial_state()
         game["level"] = "menu"
+
+    if symbol == key.F:
+        if game["fullscreen"]:
+            sweeperlib.graphics["window"].set_fullscreen(fullscreen=False)
+            game["fullscreen"] = False
+        else:
+            sweeperlib.graphics["window"].set_fullscreen(fullscreen=True)
+            game["fullscreen"] = True
 
     # Menu keys
     if game["level"] == "menu":
@@ -525,7 +536,7 @@ def keypress(symbol, modifiers):
             update_position()
 
         if symbol == key.UP:
-            if game["force"] < 50:
+            if game["force"] < 100:
                 game["force"] += 5
             update_position()
         elif symbol == key.DOWN:

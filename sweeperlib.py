@@ -120,7 +120,7 @@ def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
                            (0-255, RGBA)
     """
 
-    graphics["window"] = pyglet.window.Window(width, height, resizable=True)
+    graphics["window"] = pyglet.window.Window(width, height, resizable=True, fullscreen=True)
     graphics["bg_color"] = bg_color
     graphics["background"] = pyglet.sprite.Sprite(pyglet.resource.image("background.png"))
     #graphics["background"] = pyglet.sprite.Sprite(
