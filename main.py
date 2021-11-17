@@ -405,8 +405,7 @@ def draw():
                 sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
-        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 10, WIN_HEIGHT - 40, size=20)
-        # TODO: Check that these ducks and points are cleared everytime the level changes etc...
+        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 60, size=20)
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
         for point in animation["points"]:
