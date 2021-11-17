@@ -217,6 +217,8 @@ def update(elapsed):
             game["used_ducks"].append({
                 "x": game["x"],
                 "y": game["y"],
+                "w": game["w"],
+                "h": game["h"],
                 "vy": 0
             })
             initial_state()
@@ -298,6 +300,12 @@ def drop_ducks(ducks):
     Makes used ducks fall down to the ground.
     """
     for duck in ducks:
+        for i in range(len(game["boxes"])):
+            if is_overlapping(duck, game["boxes"][i]):
+                if game["boxes"][i]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][i])
+                    box_breaking_sound.play()
+                    break
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
