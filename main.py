@@ -51,11 +51,18 @@ animation = {
 }
 
 
-def order(box):
+def order_by_height(box):
     """
-    Used to sort the list of boxes according to their height measured from the top of the box
+    Used to sort the list of boxes according to their height measured from the top of the box.
     """
     return box["y"] + box["h"]
+
+
+def order_by_distance(collision):
+    """
+    Used to sort the list of colliding boxes according to their distance from the duck.
+    """
+    return calculate_distance(game["x"], game["y"], collision["box"]["x"], collision["box"]["y"])
 
 
 def create_boxes(quantity):
@@ -83,7 +90,7 @@ def create_boxes(quantity):
             'vy': 0
         }
         boxlist.append(box)
-        boxlist.sort(key=order)
+        boxlist.sort(key=order_by_height)
 
     return boxlist
 
@@ -94,7 +101,7 @@ def drop(boxes):
     defined as a dictionary with x and y coordinates, width, height, and falling
     velocity. Drops boxes for one time unit.
     """
-    boxes.sort(key=order)
+    boxes.sort(key=order_by_height)
     try:
         boxes[0]["initial_height"]
     except KeyError:
@@ -199,6 +206,51 @@ def launch():
         animation["points"].clear()
 
 
+def is_inside_area(min_x, max_x, min_y, max_y, object):
+    if max_y < object["y"] or min_y > object["y"] + object["h"]:
+        return False
+    elif max_x < object["x"] or min_x > object["x"] + object["w"]:
+        return False
+    else: return True
+
+
+def check_collisions():
+    collisions = []
+    
+    # Duck's direction: down and right
+    if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
+        # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})
+        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
+        if collisions:
+            collisions.sort(key=order_by_distance)
+            while collisions[0]["box"]["type"] == "target":
+                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
+                collisions.remove(collisions[0])
+                print("removed target")
+                if not collisions:
+                    print("collisions emptied")
+                    return False
+                collisions.sort(key=order_by_distance)
+            # TODO: At this point, the duck should bounce off the obstacle.
+            # We need to calculate the duck's new position on the edge of the obstacle and bounce it away from the obstacle.
+            # In this case, the duck needs to bounce either left or up, we just have to calculate which one is it.
+            return collisions[0]["box"]
+        else:
+            return False
+
+    # Duck's direction: down and left
+    elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
+        pass
+    # Duck's direction: up and right
+    elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
+        pass
+    # Duck's direction: up and left
+    elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
+        pass
+
 def update(elapsed):
     """
     This is called 60 times/second.
@@ -210,9 +262,14 @@ def update(elapsed):
     if game["flight"]:
         animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
         # TODO: Before actually changing position, we should check if the duck is about to go through a box
-        game["x"] += game["x_velocity"]
-        game["y"] += game["y_velocity"]
-        game["y_velocity"] -= GRAVITATIONAL_ACCEL
+        collision = check_collisions()
+        if collision:
+            game["x"] = collision["x"]
+            game["y"] = collision["y"] + game["h"]
+        else:
+            game["x"] += game["x_velocity"]
+            game["y"] += game["y_velocity"]
+            game["y_velocity"] -= GRAVITATIONAL_ACCEL
         if game["y"] <= GROUND_LEVEL:
             game["used_ducks"].append({
                 "x": game["x"],
@@ -222,6 +279,8 @@ def update(elapsed):
                 "vy": 0
             })
             initial_state()
+
+        """
         for i in range(len(game["boxes"])):
             overlap = is_overlapping(game, game["boxes"][i])
             if overlap:
@@ -233,15 +292,18 @@ def update(elapsed):
                         load_level(game["next_level"])
                     break
                 elif game["boxes"][i]["type"] == "obstacle":
-                    bounce(game["boxes"][i], overlap)
+                    #bounce(game["boxes"][i], overlap)
                     # TODO: Might implement bouncing off an obstacle instead of this if I have time.
-                    #game["used_ducks"].append({
-                    #    "x": game["x"],
-                    #    "y": game["y"],
-                    #    "vy": 0
-                    #})
-                    #initial_state()
+                    game["used_ducks"].append({
+                        "x": game["x"],
+                        "y": game["y"],
+                        "w": game["w"],
+                        "h": game["h"],
+                        "vy": 0
+                    })
+                    initial_state()
                     break
+        """
 
 
 def bounce(obstacle, direction):
@@ -305,7 +367,10 @@ def drop_ducks(ducks):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     box_breaking_sound.play()
-                    break
+                if not targets_remaining(game["boxes"]):
+                        initial_state()
+                        load_level(game["next_level"])
+                break
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
