@@ -113,7 +113,7 @@ def drop(boxes):
             boxes[i]["vy"] = 0
             continue
          
-        allowFalling = True
+        allow_falling = True
         for j in range(len(boxes)):
             if i == j:
                 continue
@@ -122,9 +122,9 @@ def drop(boxes):
             if is_overlapping(boxes[i], boxes[j]):
                 boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
                 boxes[i]["vy"] = 0
-                allowFalling = False      
+                allow_falling = False      
 
-        if allowFalling:
+        if allow_falling:
             boxes[i]["vy"] += GRAVITATIONAL_ACCEL
             boxes[i]["y"] -= boxes[i]["vy"]
 
@@ -224,10 +224,11 @@ def check_collisions():
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
                 collisions.append({"box": game["boxes"][i], "index": i})
-        print("collisions: ", collisions)
         # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
         if collisions:
+            print("collisions: ", collisions)
             collisions.sort(key=order_by_distance)
+            # Delete target boxes
             while collisions[0]["box"]["type"] == "target":
                 game["boxes"].remove(game["boxes"][collisions[0]["index"]])
                 collisions.remove(collisions[0])
@@ -239,13 +240,14 @@ def check_collisions():
             # TODO: At this point, the duck should bounce off the obstacle.
             # We need to calculate the duck's new position on the edge of the obstacle and bounce it away from the obstacle.
             # In this case, the duck needs to bounce either left or up, we just have to calculate which one is it.
-            # DOES NOT WORK AT ALL CURRENTLY
+            # BOUNCING LEFT AND UP-AND-LEFT WORKS NOW
+
             bounce_from = collisions[0]["box"]
             print("bounce from:", bounce_from)
 
             # Calculate position, if the box should bounce to the left
             test_box = {"x": bounce_from["x"] - game["w"], 
-                        "y": abs(game["y_velocity"]) / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"]), 
+                        "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"])), 
                         "w": game["w"], 
                         "h": game["h"]
                         }
@@ -259,7 +261,7 @@ def check_collisions():
                 return True
 
             # Calculate position, if the box should bounce up
-            test_box = {"x": game["x_velocity"] / abs(game["y_velocity"]) * (game["y"] - bounce_from["y"] - bounce_from["h"]), 
+            test_box = {"x": game["x"] - (game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"])), 
                         "y": bounce_from["y"] + bounce_from["h"], 
                         "w": game["w"], 
                         "h": game["h"]}
@@ -297,7 +299,6 @@ def update(elapsed):
         # TODO: Before actually changing position, we should check if the duck is about to go through a box
         collision = check_collisions()
         if not collision:
-            print("no collision")
             game["x"] += game["x_velocity"]
             game["y"] += game["y_velocity"]
             game["y_velocity"] -= GRAVITATIONAL_ACCEL
@@ -310,6 +311,9 @@ def update(elapsed):
                 "vy": 0
             })
             initial_state()
+        if not targets_remaining(game["boxes"]):
+            initial_state()
+            load_level(game["next_level"])
 
         """
         for i in range(len(game["boxes"])):
@@ -501,7 +505,7 @@ def draw():
                 sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
-        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 60, size=20)
+        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 80, size=20)
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
         for point in animation["points"]:
