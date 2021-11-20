@@ -102,9 +102,9 @@ def load_duck(path):
     duck = pyglet.resource.image("duck.png")
     sling = pyglet.resource.image("sling.png")
     graphics["images"]["duck"] = duck
-    graphics["images"]["duck2"] = pyglet.resource.image("duck2.png") # added an extra duck sprite for animation
-    graphics["images"]["target"] = pyglet.resource.image("target.png") # added a custom target sprite
-    graphics["images"]["obstacle"] = pyglet.resource.image("obstacle.png") # added a custom obstacle sprite
+    graphics["images"]["duck2"] = pyglet.resource.image("duck2.png") # Added an extra duck sprite for animation -Tuomas Mattila
+    graphics["images"]["target"] = pyglet.resource.image("target.png") # Added a custom target sprite -Tuomas Mattila
+    graphics["images"]["obstacle"] = pyglet.resource.image("obstacle.png") # Added a custom obstacle sprite -Tuomas Mattila
     graphics["images"]["sling"] = sling
 
 def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
@@ -122,7 +122,7 @@ def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
 
     graphics["window"] = pyglet.window.Window(width, height, resizable=True, fullscreen=True)
     graphics["bg_color"] = bg_color
-    graphics["background"] = pyglet.sprite.Sprite(pyglet.resource.image("background.png"))
+    graphics["background"] = pyglet.sprite.Sprite(pyglet.resource.image("background.png")) # Added a custom background -Tuomas Mattila
     #graphics["background"] = pyglet.sprite.Sprite(
     #    pyglet.image.SolidColorImagePattern(bg_color).create_image(width, height)
     #)

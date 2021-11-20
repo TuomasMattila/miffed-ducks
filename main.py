@@ -119,7 +119,7 @@ def drop(boxes):
                 continue
             if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
-            if is_overlapping(boxes[i], boxes[j]):
+            if is_inside_area(boxes[i]["x"], boxes[i]["x"] + boxes[i]["w"], boxes[i]["y"], boxes[i]["y"] + boxes[i]["h"], boxes[j]):
                 boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
                 boxes[i]["vy"] = 0
                 allow_falling = False      
@@ -127,51 +127,6 @@ def drop(boxes):
         if allow_falling:
             boxes[i]["vy"] += GRAVITATIONAL_ACCEL
             boxes[i]["y"] -= boxes[i]["vy"]
-
-
-def is_overlapping(box, other):
-    """
-    Checks whether the box is overlapping the other box.
-    Returns the direction to which the duck has to bounce from an obstacle.
-    """
-    # Check if the other box"s upper left corner is inside the box
-    if (box["x"] <= other["x"] <= box["x"] + box["w"] and 
-            box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
-        return "left"
-    # Check if the other box"s upper right corner is inside the box
-    elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
-            box["y"] <= other["y"] + other["h"] <= box["y"] + box["h"]):
-        return "right"
-    # Check if the other box"s lower left corner is inside the box
-    elif (box["x"] <= other["x"] <= box["x"] + box["w"] and 
-            box["y"] <= other["y"] <= box["y"] + box["h"]):
-        return "left"
-    # Check if the other box"s lower right corner is inside the box
-    elif (box["x"] <= other["x"] + other["w"] <= box["x"] + box["w"] and 
-            box["y"] <= other["y"] <= box["y"] + box["h"]):
-        return "right"
-    # Check if the box goes on top of the other box through the bottom of the other box
-    elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
-            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
-            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"]):
-        return "down"   
-    # Check if the box goes on top of the other box through the top of the other box
-    elif (other["x"] <= box["x"] <= other["x"] + other["w"] and
-            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"] and
-            other["y"] <= box["y"] <= other["y"] + other["h"]):
-        return "up"
-    # Check if the box goes on top of the other box through the left side of the other box
-    elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
-            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
-            other["x"] <= box["x"] + box["w"] <= other["x"] + other["w"]):
-        return "left"
-    # Check if the box goes on top of the other box through the right side of the other box
-    elif (other["y"] <= box["y"] <= other["y"] + other["h"] and
-            other["y"] <= box["y"] + box["h"] <= other["y"] + other["h"] and
-            other["x"] <= box["x"] <= other["x"] + other["w"]):
-        return "right"
-    else:
-        return False
 
 
 def initial_state():
@@ -453,8 +408,9 @@ def drop_ducks(ducks):
     Makes used ducks fall down to the ground.
     """
     for duck in ducks:
+        # Used ducks that are falling also destroy targets
         for i in range(len(game["boxes"])):
-            if is_overlapping(duck, game["boxes"][i]):
+            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], game["boxes"][i]):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     box_breaking_sound.play()
