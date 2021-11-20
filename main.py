@@ -244,8 +244,8 @@ def check_collisions():
             print("bounce from:", bounce_from)
 
             # Calculate position, if the box should bounce to the left
-            test_box = {"x": game["x"] + (bounce_from["x"] - game["w"] - game["x"]), 
-                        "y": game["y_velocity"] / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"]), 
+            test_box = {"x": bounce_from["x"] - game["w"], 
+                        "y": abs(game["y_velocity"]) / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"]), 
                         "w": game["w"], 
                         "h": game["h"]
                         }
@@ -255,18 +255,22 @@ def check_collisions():
                 game["x"] = test_box["x"]
                 game["y"] = test_box["y"]
                 game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+                collisions.clear()
+                return True
 
             # Calculate position, if the box should bounce up
-            test_box = {"x": game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"]), "y": bounce_from["y"] + bounce_from["h"], "w": game["w"], "h": game["h"]}
+            test_box = {"x": game["x_velocity"] / abs(game["y_velocity"]) * (game["y"] - bounce_from["y"] - bounce_from["h"]), 
+                        "y": bounce_from["y"] + bounce_from["h"], 
+                        "w": game["w"], 
+                        "h": game["h"]}
             print("Test box: ", test_box, "Bounce from:", bounce_from)
             if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
                 print("Bounce up")
                 game["x"] = test_box["x"]
                 game["y"] = test_box["y"]
                 game["y_velocity"] = game["y_velocity"] * -ELASTICITY
-
-            collisions.clear()
-            return True
+                collisions.clear()
+                return True
         else:
             return False
 
