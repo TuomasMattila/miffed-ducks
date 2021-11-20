@@ -260,14 +260,14 @@ def check_collisions():
                 collisions.clear()
                 return True
 
-            # Calculate position, if the box should bounce up
+            # Calculate position, if the box should bounce up-and-right
             test_box = {"x": game["x"] - (game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"])), 
                         "y": bounce_from["y"] + bounce_from["h"], 
                         "w": game["w"], 
                         "h": game["h"]}
             print("Test box: ", test_box, "Bounce from:", bounce_from)
             if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                print("Bounce up")
+                print("Bounce up-and-right")
                 game["x"] = test_box["x"]
                 game["y"] = test_box["y"]
                 game["y_velocity"] = game["y_velocity"] * -ELASTICITY
@@ -275,16 +275,72 @@ def check_collisions():
                 return True
         else:
             return False
-
+    
     # Duck's direction: down and left
     elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
-        pass
+                # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})
+        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
+        if collisions:
+            print("collisions: ", collisions)
+            collisions.sort(key=order_by_distance)
+            # Delete target boxes
+            while collisions[0]["box"]["type"] == "target":
+                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
+                collisions.remove(collisions[0])
+                print("removed target")
+                if not collisions:
+                    print("collisions emptied")
+                    return False
+                collisions.sort(key=order_by_distance)
+            # TODO: At this point, the duck should bounce off the obstacle.
+            # We need to calculate the duck's new position on the edge of the obstacle and bounce it away from the obstacle.
+            # In this case, the duck needs to bounce either left or up, we just have to calculate which one is it.
+            # BOUNCING LEFT AND UP-AND-LEFT WORKS NOW
+
+            bounce_from = collisions[0]["box"]
+            print("bounce from:", bounce_from)
+
+            # Calculate position, if the box should bounce to the right
+            test_box = {"x": bounce_from["x"] + bounce_from["w"], 
+                        "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (game["x"] - bounce_from["x"] - bounce_from["w"])), 
+                        "w": game["w"], 
+                        "h": game["h"]
+                        }
+            print("Test box: ", test_box, "Bounce from:", bounce_from)
+            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
+                print("Bounce right")
+                game["x"] = test_box["x"]
+                game["y"] = test_box["y"]
+                game["x_velocity"] = game["x_velocity"] * -ELASTICITY
+                collisions.clear()
+                return True
+
+            # Calculate position, if the box should bounce up-and-left
+            test_box = {"x": game["x"] + (game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"])), 
+                        "y": bounce_from["y"] + bounce_from["h"], 
+                        "w": game["w"], 
+                        "h": game["h"]}
+            print("Test box: ", test_box, "Bounce from:", bounce_from)
+            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
+                print("Bounce up-and-left")
+                game["x"] = test_box["x"]
+                game["y"] = test_box["y"]
+                game["y_velocity"] = game["y_velocity"] * -ELASTICITY
+                collisions.clear()
+                return True
+        else:
+            return False
+    
+
     # Duck's direction: up and right
-    elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
-        pass
+    #elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
+    #    pass
     # Duck's direction: up and left
-    elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
-        pass
+    #elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
+    #    pass
 
 def update(elapsed):
     """
@@ -478,16 +534,31 @@ def draw():
         sweeperlib.draw_text("Space: Launch", WIN_WIDTH - 550, 354)
         sweeperlib.draw_text("M: Menu", WIN_WIDTH - 550, 282)
         sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 550, 210)
+
     if game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
         sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -72)
         sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -144)
+
     if game["level"] == "lose":
         sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
         sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 -72)
         sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 -144)
-        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)        
+        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)  
+
     if game["level"].startswith("level"):
+        # Grid
+        #for x in range(0, WIN_WIDTH, 40):
+        #    for y in range(0, WIN_HEIGHT, 40):
+        #        if x == 0 and y > 0:
+        #            sweeperlib.draw_text(".", x, y, size=20)
+        #            sweeperlib.draw_text(str(y), x+5, y, size=10)
+        #        elif x > 0 and y == 0:
+        #            sweeperlib.draw_text(".", x, y, size=20)
+        #            sweeperlib.draw_text(str(x), x+5, y, size=10)
+        #        else:
+        #            sweeperlib.draw_text(".", x, y, size=20)
+        
         # Duck animation         
         if game["flight"]:
             if game["time"] >= animation["animation_time"] + 0.2:
@@ -499,17 +570,27 @@ def draw():
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
+
+        # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
+
+        # Boxes
         for i in range(len(game["boxes"])):
             if game["boxes"][i]["type"] == "target":
                 sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
-        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 80, size=20)
+
+        # Used ducks
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
+
+        # Points
         for point in animation["points"]:
             sweeperlib.draw_text("o", point["x"], point["y"], color=(255, 255, 255, 255), size=10)
+
+        # Info texts
+        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 100, size=20)
     sweeperlib.draw_sprites()
 
 
