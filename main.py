@@ -492,13 +492,13 @@ def draw():
         sweeperlib.draw_text("Play levels: P", 40, 354)
         sweeperlib.draw_text("Play random levels: R", 40, 282)
         sweeperlib.draw_text("Quit: Q", 40, 210)
-        sweeperlib.draw_text("Controls:", WIN_WIDTH - 650, 642) # TODO: Include mouse controls' instructions
-        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 650, 570)
-        sweeperlib.draw_text("←/→ or mouse drag: Set angle", WIN_WIDTH - 650, 498)
-        sweeperlib.draw_text("↑/↓ or mouse drag: Set Force", WIN_WIDTH - 650, 426)
-        sweeperlib.draw_text("Space or release mouse: Launch", WIN_WIDTH - 650, 354)
-        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 650, 282)
-        sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 650, 210)
+        sweeperlib.draw_text("Controls:", WIN_WIDTH - 670, 642) # TODO: Include mouse controls' instructions
+        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 670, 570)
+        sweeperlib.draw_text("←/→ or mouse drag: Set angle", WIN_WIDTH - 670, 498)
+        sweeperlib.draw_text("↑/↓ or mouse drag: Set Force", WIN_WIDTH - 670, 426)
+        sweeperlib.draw_text("Space or release mouse: Launch", WIN_WIDTH - 670, 354)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 670, 282)
+        sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 670, 210)
 
     if game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
