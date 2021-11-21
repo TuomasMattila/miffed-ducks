@@ -41,7 +41,8 @@ game = {
     "time": 0.0,
     "random_levels_passed": 0,
     "used_ducks": [],
-    "fullscreen": True
+    "fullscreen": True,
+    "slow_duck": 0
 }
 
 animation = {
@@ -172,6 +173,7 @@ def is_inside_area(min_x, max_x, min_y, max_y, object):
 
 def check_collisions():
     collisions = []
+    bounce_from = None
     
     # Duck's direction: down and right
     if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
@@ -179,19 +181,21 @@ def check_collisions():
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
                 collisions.append({"box": game["boxes"][i], "index": i})
-        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
         if collisions:
             collisions.sort(key=order_by_distance)
-            # Delete target boxes
-            while collisions[0]["box"]["type"] == "target":
-                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
-                box_breaking_sound.play()
-                collisions.remove(collisions[0])
-                if not collisions:
-                    return False
-                collisions.sort(key=order_by_distance)
+            # Find the closest box and delete target boxes    
+            for collision in collisions:
+                if collision["box"]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][collision["index"]])
+                    box_breaking_sound.play()
+                elif collision["box"]["type"] == "obstacle":
+                    bounce_from = collision["box"]
+                    break
 
-            bounce_from = collisions[0]["box"]
+            collisions.clear()
+
+            if not bounce_from:
+                return False
 
             # Calculate position, if the box should bounce to the left
             if game["x"] + game["w"] < bounce_from["x"]:
@@ -227,19 +231,21 @@ def check_collisions():
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
                 collisions.append({"box": game["boxes"][i], "index": i})
-        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
         if collisions:
             collisions.sort(key=order_by_distance)
-            # Delete target boxes
-            while collisions[0]["box"]["type"] == "target":
-                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
-                box_breaking_sound.play()
-                collisions.remove(collisions[0])
-                if not collisions:
-                    return False
-                collisions.sort(key=order_by_distance)
+            # Find the closest box and delete target boxes    
+            for collision in collisions:
+                if collision["box"]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][collision["index"]])
+                    box_breaking_sound.play()
+                elif collision["box"]["type"] == "obstacle":
+                    bounce_from = collision["box"]
+                    break
 
-            bounce_from = collisions[0]["box"]
+            collisions.clear()
+
+            if not bounce_from:
+                return False
 
             if game["x"] > bounce_from["x"] + bounce_from["w"]:
                 # Calculate position, if the box should bounce to the right
@@ -275,19 +281,21 @@ def check_collisions():
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
                 collisions.append({"box": game["boxes"][i], "index": i})
-        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
         if collisions:
             collisions.sort(key=order_by_distance)
-            # Delete target boxes
-            while collisions[0]["box"]["type"] == "target":
-                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
-                box_breaking_sound.play()
-                collisions.remove(collisions[0])
-                if not collisions:
-                    return False
-                collisions.sort(key=order_by_distance)
+            # Find the closest box and delete target boxes    
+            for collision in collisions:
+                if collision["box"]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][collision["index"]])
+                    box_breaking_sound.play()
+                elif collision["box"]["type"] == "obstacle":
+                    bounce_from = collision["box"]
+                    break
 
-            bounce_from = collisions[0]["box"]
+            collisions.clear()
+
+            if not bounce_from:
+                return False
 
             # Calculate position, if the box should bounce to the left
             test_box = {"x": bounce_from["x"] - game["w"], 
@@ -321,19 +329,21 @@ def check_collisions():
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]): # TODO: this is unique for each direction
                 collisions.append({"box": game["boxes"][i], "index": i})
-        # Which box is the closest to the duck's position (a.k.a. which box should the duck bounce off from)
         if collisions:
             collisions.sort(key=order_by_distance)
-            # Delete target boxes
-            while collisions[0]["box"]["type"] == "target":
-                game["boxes"].remove(game["boxes"][collisions[0]["index"]])
-                box_breaking_sound.play()
-                collisions.remove(collisions[0])
-                if not collisions:
-                    return False
-                collisions.sort(key=order_by_distance)
+            # Find the closest box and delete target boxes    
+            for collision in collisions:
+                if collision["box"]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][collision["index"]])
+                    box_breaking_sound.play()
+                elif collision["box"]["type"] == "obstacle":
+                    bounce_from = collision["box"]
+                    break
 
-            bounce_from = collisions[0]["box"]
+            collisions.clear()
+
+            if not bounce_from:
+                return False
 
             if game["x"] > bounce_from["x"] + bounce_from["w"]:
                 # Calculate position, if the box should bounce to the right
@@ -377,7 +387,11 @@ def update(elapsed):
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        if game["y"] <= GROUND_LEVEL:
+        if game["x_velocity"] < 2 and game["y_velocity"] < 2:
+            game["slow_duck"] += elapsed
+        else:
+            game["slow_duck"] = 0
+        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 5:
             game["used_ducks"].append({
                 "x": game["x"],
                 "y": game["y"],
@@ -511,7 +525,7 @@ def draw():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
-                animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
+                #animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
@@ -531,8 +545,8 @@ def draw():
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
 
         # Points
-        for point in animation["points"]:
-            sweeperlib.draw_text("o", point["x"], point["y"], color=(255, 255, 255, 255), size=10)
+        #for point in animation["points"]:
+        #    sweeperlib.draw_text("o", point["x"], point["y"], color=(255, 255, 255, 255), size=10)
 
         # Info texts
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 100, size=20)
@@ -653,6 +667,7 @@ def keypress(symbol, modifiers):
 
     # Game keys
     if game["level"].startswith("level"):
+        # TODO: This should not work in randomized levels
         if symbol == key.R:
             initial_state()
             load_level(game["level"])
@@ -681,6 +696,10 @@ def keypress(symbol, modifiers):
 
         if symbol == key.SPACE:
             launch()
+
+        if symbol == key.N:
+            initial_state()
+            load_level(game["next_level"])
 
 
 if __name__ == "__main__":
