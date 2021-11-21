@@ -163,6 +163,9 @@ def launch():
 
 
 def is_inside_area(min_x, max_x, min_y, max_y, object):
+    """
+    Checks whether the object is inside the area defined by the minimum and maximum x and y values.
+    """
     if max_y < object["y"] or min_y > object["y"] + object["h"]:
         return False
     elif max_x < object["x"] or min_x > object["x"] + object["w"]:
@@ -170,8 +173,12 @@ def is_inside_area(min_x, max_x, min_y, max_y, object):
     else: 
         return True
 
-
+# TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
 def check_collisions():
+    """
+    Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
+    If the duck collides with an obstacle, it bounces off it.
+    """
     collisions = []
     bounce_from = None
     
@@ -485,13 +492,13 @@ def draw():
         sweeperlib.draw_text("Play levels: P", 40, 354)
         sweeperlib.draw_text("Play random levels: R", 40, 282)
         sweeperlib.draw_text("Quit: Q", 40, 210)
-        sweeperlib.draw_text("Controls:", WIN_WIDTH - 550, 642)
-        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 550, 570)
-        sweeperlib.draw_text("←/→: Set angle", WIN_WIDTH - 550, 498)
-        sweeperlib.draw_text("↑/↓: Set Force", WIN_WIDTH - 550, 426)
-        sweeperlib.draw_text("Space: Launch", WIN_WIDTH - 550, 354)
-        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 550, 282)
-        sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 550, 210)
+        sweeperlib.draw_text("Controls:", WIN_WIDTH - 650, 642) # TODO: Include mouse controls' instructions
+        sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 650, 570)
+        sweeperlib.draw_text("←/→ or mouse drag: Set angle", WIN_WIDTH - 650, 498)
+        sweeperlib.draw_text("↑/↓ or mouse drag: Set Force", WIN_WIDTH - 650, 426)
+        sweeperlib.draw_text("Space or release mouse: Launch", WIN_WIDTH - 650, 354)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH - 650, 282)
+        sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 650, 210)
 
     if game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
@@ -530,6 +537,7 @@ def draw():
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
 
+        # TODO: Create new sling sprite
         # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
 
@@ -539,6 +547,10 @@ def draw():
                 sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
             elif game["boxes"][i]["type"] == "obstacle":
                 sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
+
+        # Remaining ducks
+        for i in range(game["ducks"] - 1):
+            sweeperlib.prepare_sprite("duck", 40 + i * 50, 20)
 
         # Used ducks
         for duck in game["used_ducks"]:
@@ -667,10 +679,10 @@ def keypress(symbol, modifiers):
 
     # Game keys
     if game["level"].startswith("level"):
-        # TODO: This should not work in randomized levels
-        if symbol == key.R:
-            initial_state()
-            load_level(game["level"])
+        if game["level"].endswith(".json"):
+            if symbol == key.R:
+                initial_state()
+                load_level(game["level"])
     
         if symbol == key.RIGHT:
             game["angle"] -= 5
