@@ -173,12 +173,86 @@ def is_inside_area(min_x, max_x, min_y, max_y, object):
     else: 
         return True
 
+
+def calculate_angle(x1, x2, y1, y2):
+    """
+    Returns the radian angle between two points. 
+    """
+    angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
+    if x2 < x1:  
+        angle += (math.pi / 2 - angle) * 2
+    if y2 < y1:
+        angle = angle * -1
+    return angle
+
+
 # TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
 def check_collisions():
     """
     Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
     If the duck collides with an obstacle, it bounces off it.
     """
+    collisions = []
+    bounce_from = None
+
+    # Duck's direction: down and right
+    if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
+        # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})
+    # Duck's direction: down and left
+    elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
+        # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})    
+    # Duck's direction: up and right
+    elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
+        # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})
+    # Duck's direction: up and left
+    elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
+        # Which boxes are colliding or are about to be passed by the duck
+        for i in range(len(game["boxes"])):
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
+                collisions.append({"box": game["boxes"][i], "index": i})
+
+    if collisions:
+        collisions.sort(key=order_by_distance)
+        # Find the closest box and delete target boxes    
+        for collision in collisions:
+            if collision["box"]["type"] == "target":
+                game["boxes"].remove(game["boxes"][collision["index"]])
+                box_breaking_sound.play()
+            elif collision["box"]["type"] == "obstacle":
+                bounce_from = collision["box"]
+                break
+        collisions.clear()
+        if not bounce_from:
+            return False
+    else:
+        return False
+
+    angle = calculate_angle(game["y"], game["y"] + game["y_velocity"], game["x"], game["x"] + game["x_velocity"]) # TODO: use this function in clamp_inside_circle -function
+    # When bouncing left
+    ray = (bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle)
+    # When bouncing right
+    ray = (game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle)
+    # When bouncing up
+    ray = (game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle)
+    # When bouncing down
+    ray = (bounce_from["y"] - game["h"] - game["y"]) / math.sin(angle)
+
+
+
+
+
+
+    ############## OLD FUNCTION ################
+
     collisions = []
     bounce_from = None
     
@@ -329,12 +403,13 @@ def check_collisions():
                 collisions.clear()
                 return True
         else:
-            return False        
+            return False 
+
     # Duck's direction: up and left
     elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
         # Which boxes are colliding or are about to be passed by the duck
         for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]): # TODO: this is unique for each direction
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
                 collisions.append({"box": game["boxes"][i], "index": i})
         if collisions:
             collisions.sort(key=order_by_distance)
@@ -492,7 +567,7 @@ def draw():
         sweeperlib.draw_text("Play levels: P", 40, 354)
         sweeperlib.draw_text("Play random levels: R", 40, 282)
         sweeperlib.draw_text("Quit: Q", 40, 210)
-        sweeperlib.draw_text("Controls:", WIN_WIDTH - 670, 642) # TODO: Include mouse controls' instructions
+        sweeperlib.draw_text("Controls:", WIN_WIDTH - 670, 642)
         sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 670, 570)
         sweeperlib.draw_text("←/→ or mouse drag: Set angle", WIN_WIDTH - 670, 498)
         sweeperlib.draw_text("↑/↓ or mouse drag: Set Force", WIN_WIDTH - 670, 426)
@@ -537,7 +612,6 @@ def draw():
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
 
-        # TODO: Create new sling sprite
         # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
 
