@@ -42,6 +42,7 @@ game = {
     "random_levels_passed": 0,
     "used_ducks": [],
     "fullscreen": True,
+    "grid": False, # TODO: Delete later
     "slow_duck": 0
 }
 
@@ -174,7 +175,7 @@ def is_inside_area(min_x, max_x, min_y, max_y, object):
         return True
 
 
-def calculate_angle(x1, x2, y1, y2):
+def calculate_angle(x1, y1, x2, y2):
     """
     Returns the radian angle between two points. 
     """
@@ -190,7 +191,7 @@ def calculate_angle(x1, x2, y1, y2):
 def check_collisions():
     """
     Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
-    If the duck collides with an obstacle, it bounces off it.
+    If the duck collides with an obstacle, it bounces off it if the circumstances are right.
     """
     collisions = []
     bounce_from = None
@@ -236,224 +237,48 @@ def check_collisions():
     else:
         return False
 
-    angle = calculate_angle(game["y"], game["y"] + game["y_velocity"], game["x"], game["x"] + game["x_velocity"]) # TODO: use this function in clamp_inside_circle -function
+
+    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"]) # TODO: use this function in clamp_inside_circle -function
+
     # When bouncing left
-    ray = (bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle)
+    if game["x_velocity"] >= 0 and game["x"] <= bounce_from["x"]:
+        ray = abs((bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle))
+        if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
+            return True
+
+
     # When bouncing right
-    ray = (game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle)
+    elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"]:
+        ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
+        if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
+            return True
+
     # When bouncing up
-    ray = (game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle)
-    # When bouncing down
-    ray = (bounce_from["y"] - game["h"] - game["y"]) / math.sin(angle)
+    if game["y_velocity"] <= 0:
+        ray = abs((game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle))
+        if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
+            return True
 
 
-
-
-
-
-    ############## OLD FUNCTION ################
-
-    collisions = []
-    bounce_from = None
-    
-    # Duck's direction: down and right
-    if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
-        # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
-        if collisions:
-            collisions.sort(key=order_by_distance)
-            # Find the closest box and delete target boxes    
-            for collision in collisions:
-                if collision["box"]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][collision["index"]])
-                    box_breaking_sound.play()
-                elif collision["box"]["type"] == "obstacle":
-                    bounce_from = collision["box"]
-                    break
-
-            collisions.clear()
-
-            if not bounce_from:
-                return False
-
-            # Calculate position, if the box should bounce to the left
-            if game["x"] + game["w"] < bounce_from["x"]:
-                test_box = {"x": bounce_from["x"] - game["w"], 
-                            "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"])), 
-                            "w": game["w"], 
-                            "h": game["h"]
-                            }
-                if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                    game["x"] = test_box["x"]
-                    game["y"] = test_box["y"]
-                    game["x_velocity"] = game["x_velocity"] * -ELASTICITY
-                    collisions.clear()
-                    return True
-
-            # Calculate position, if the box should bounce up-and-right
-            test_box = {"x": game["x"] + (game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"])), 
-                        "y": bounce_from["y"] + bounce_from["h"], 
-                        "w": game["w"], 
-                        "h": game["h"]}
-            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                game["x"] = test_box["x"]
-                game["y"] = test_box["y"]
-                game["y_velocity"] = game["y_velocity"] * -ELASTICITY
-                collisions.clear()
-                return True
-        else:
-            return False
-    
-    # Duck's direction: down and left
-    elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
-        # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
-        if collisions:
-            collisions.sort(key=order_by_distance)
-            # Find the closest box and delete target boxes    
-            for collision in collisions:
-                if collision["box"]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][collision["index"]])
-                    box_breaking_sound.play()
-                elif collision["box"]["type"] == "obstacle":
-                    bounce_from = collision["box"]
-                    break
-
-            collisions.clear()
-
-            if not bounce_from:
-                return False
-
-            if game["x"] > bounce_from["x"] + bounce_from["w"]:
-                # Calculate position, if the box should bounce to the right
-                test_box = {"x": bounce_from["x"] + bounce_from["w"], 
-                            "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (game["x"] - bounce_from["x"] - bounce_from["w"])), 
-                            "w": game["w"], 
-                            "h": game["h"]
-                            }
-                if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                    game["x"] = test_box["x"]
-                    game["y"] = test_box["y"]
-                    game["x_velocity"] = game["x_velocity"] * -ELASTICITY
-                    collisions.clear()
-                    return True
-
-            # Calculate position, if the box should bounce up-and-left
-            test_box = {"x": game["x"] + (game["x_velocity"] / game["y_velocity"] * (game["y"] - bounce_from["y"] - bounce_from["h"])), 
-                        "y": bounce_from["y"] + bounce_from["h"], 
-                        "w": game["w"], 
-                        "h": game["h"]}
-            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                game["x"] = test_box["x"]
-                game["y"] = test_box["y"]
-                game["y_velocity"] = game["y_velocity"] * -ELASTICITY
-                collisions.clear()
-                return True
-        else:
-            return False
-
-    # Duck's direction: up and right
-    elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
-        # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
-        if collisions:
-            collisions.sort(key=order_by_distance)
-            # Find the closest box and delete target boxes    
-            for collision in collisions:
-                if collision["box"]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][collision["index"]])
-                    box_breaking_sound.play()
-                elif collision["box"]["type"] == "obstacle":
-                    bounce_from = collision["box"]
-                    break
-
-            collisions.clear()
-
-            if not bounce_from:
-                return False
-
-            # Calculate position, if the box should bounce to the left
-            test_box = {"x": bounce_from["x"] - game["w"], 
-                        "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (bounce_from["x"] - game["w"] - game["x"])), 
-                        "w": game["w"], 
-                        "h": game["h"]
-                        }
-            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                game["x"] = test_box["x"]
-                game["y"] = test_box["y"]
-                game["x_velocity"] = game["x_velocity"] * -ELASTICITY
-                collisions.clear()
-                return True
-
-            # Calculate position, if the box should bounce down-and-right
-            test_box = {"x": game["x"] + (game["x_velocity"] / game["y_velocity"] * (bounce_from["y"] - game["h"] - game["y"])), 
-                        "y": bounce_from["y"] - game["h"], 
-                        "w": game["w"], 
-                        "h": game["h"]}
-            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                game["x"] = test_box["x"]
-                game["y"] = test_box["y"]
-                game["y_velocity"] = game["y_velocity"] * -ELASTICITY
-                collisions.clear()
-                return True
-        else:
-            return False 
-
-    # Duck's direction: up and left
-    elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
-        # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
-        if collisions:
-            collisions.sort(key=order_by_distance)
-            # Find the closest box and delete target boxes    
-            for collision in collisions:
-                if collision["box"]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][collision["index"]])
-                    box_breaking_sound.play()
-                elif collision["box"]["type"] == "obstacle":
-                    bounce_from = collision["box"]
-                    break
-
-            collisions.clear()
-
-            if not bounce_from:
-                return False
-
-            if game["x"] > bounce_from["x"] + bounce_from["w"]:
-                # Calculate position, if the box should bounce to the right
-                test_box = {"x": bounce_from["x"] + bounce_from["w"], 
-                            "y": game["y"] + (game["y_velocity"] / game["x_velocity"] * (game["x"] - bounce_from["x"] - bounce_from["w"])), 
-                            "w": game["w"], 
-                            "h": game["h"]
-                            }
-                if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                    game["x"] = test_box["x"]
-                    game["y"] = test_box["y"]
-                    game["x_velocity"] = game["x_velocity"] * -ELASTICITY
-                    collisions.clear()
-                    return True
-
-            # Calculate position, if the box should bounce down-and-left
-            test_box = {"x": game["x"] + (game["x_velocity"] / game["y_velocity"] * (bounce_from["y"] - game["h"] - game["y"])), 
-                        "y": bounce_from["y"] - game["h"], 
-                        "w": game["w"], 
-                        "h": game["h"]}
-            if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
-                game["x"] = test_box["x"]
-                game["y"] = test_box["y"]
-                game["y_velocity"] = game["y_velocity"] * -ELASTICITY
-                collisions.clear()
-                return True
-        else:
-            return False
+def try_to_bounce(angle, ray, bounce_from, velocity_axis):
+    """
+    Tests if the duck should bounce off the bounce_from -obstacle in the direction defined by velocity_axis.
+    velocity_axis is either "x_velocity" or "y_velocity".
+    """
+    x_movement, y_movement = convert_to_xy(angle, ray)
+    # Test whether the box should bounce left
+    test_box = {"x": game["x"] + x_movement, 
+                "y": game["y"] + y_movement, 
+                "w": game["w"], 
+                "h": game["h"]
+                }
+    if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
+        game["x"] = test_box["x"]
+        game["y"] = test_box["y"]
+        game[velocity_axis] = game[velocity_axis] * -ELASTICITY
+        return True
+    else:
+        return False
 
 def update(elapsed):
     """
@@ -469,11 +294,13 @@ def update(elapsed):
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        if game["x_velocity"] < 2 and game["y_velocity"] < 2:
+        # TODO: Level 2: shoot angle 75 force 90 and find out why the duck does that. Edit these 'slow_duck' related values if needed. Preferably fix the bouncing.
+        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 1.5:
             game["slow_duck"] += elapsed
         else:
             game["slow_duck"] = 0
-        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 5:
+        print("Slow duck:", game["slow_duck"])
+        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
             game["used_ducks"].append({
                 "x": game["x"],
                 "y": game["y"],
@@ -498,10 +325,11 @@ def drop_ducks(ducks):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     box_breaking_sound.play()
+                    break
                 if not targets_remaining(game["boxes"]):
                         initial_state()
                         load_level(game["next_level"])
-                break
+                        break
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
@@ -587,17 +415,18 @@ def draw():
         sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)  
 
     if game["level"].startswith("level"):
-        # Grid
-        #for x in range(0, WIN_WIDTH, 40):
-        #    for y in range(0, WIN_HEIGHT, 40):
-        #        if x == 0 and y > 0:
-        #            sweeperlib.draw_text(".", x, y, size=20)
-        #            sweeperlib.draw_text(str(y), x+5, y, size=10)
-        #        elif x > 0 and y == 0:
-        #            sweeperlib.draw_text(".", x, y, size=20)
-        #            sweeperlib.draw_text(str(x), x+5, y, size=10)
-        #        else:
-        #            sweeperlib.draw_text(".", x, y, size=20)
+        # Grid TODO: Delete later
+        if game["grid"]:
+            for x in range(0, WIN_WIDTH, 40):
+                for y in range(0, WIN_HEIGHT, 40):
+                    if x == 0 and y > 0:
+                        sweeperlib.draw_text(".", x, y, size=20)
+                        sweeperlib.draw_text(str(y), x+5, y, size=10)
+                    elif x > 0 and y == 0:
+                        sweeperlib.draw_text(".", x, y, size=20)
+                        sweeperlib.draw_text(str(x), x+5, y, size=10)
+                    else:
+                        sweeperlib.draw_text(".", x, y, size=20)
         
         # Duck animation         
         if game["flight"]:
@@ -680,7 +509,7 @@ def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
     point is already inside the circle. If it is, its coordinates 
     are simply returned as they are. However, if the point is outside 
     the circle, it is "pulled" to the circle's perimeter. In 
-    doing so, the angle from the circle"s center must be maintained 
+    doing so, the angle from the circle's center must be maintained 
     while the distance is set exactly to the circle's radius.
     """
     distance = calculate_distance(x, y, circle_center_x, circle_center_y)
@@ -736,6 +565,14 @@ def keypress(symbol, modifiers):
         initial_state()
         game["level"] = "menu"
 
+    # TODO: Delete later
+    if symbol == key.G:
+        if game["grid"]:
+            game["grid"] = False
+        else:
+            game["grid"] = True
+        
+
     if symbol == key.F:
         if game["fullscreen"]:
             sweeperlib.graphics["window"].set_fullscreen(fullscreen=False)
@@ -783,6 +620,7 @@ def keypress(symbol, modifiers):
         if symbol == key.SPACE:
             launch()
 
+        # TODO: Delete later
         if symbol == key.N:
             initial_state()
             load_level(game["next_level"])
