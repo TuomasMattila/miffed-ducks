@@ -52,6 +52,60 @@ animation = {
 }
 
 
+############################## Math functions ##############################
+
+
+def calculate_distance(x1, y1, x2, y2):
+    """
+    Calculates the distance between two points and returns it.
+    """
+    return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
+
+
+def calculate_angle(x1, y1, x2, y2):
+    """
+    Returns the radian angle between two points. 
+    """
+    angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
+    if x2 < x1:  
+        angle += (math.pi / 2 - angle) * 2
+    if y2 < y1:
+        angle = angle * -1
+    return angle
+
+
+def convert_to_xy(angle, ray):
+    """
+    Converts polar coordinates to cartesian coordinates.
+    Note that the angle given as a parameter must be a radian value.
+    """
+    x = ray * math.cos(angle)
+    y = ray * math.sin(angle)
+    return x, y
+
+
+def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
+    """
+    First the function finds out whether the given 
+    point is already inside the circle. If it is, its coordinates 
+    are simply returned as they are. However, if the point is outside 
+    the circle, it is "pulled" to the circle's perimeter. In 
+    doing so, the angle from the circle's center must be maintained 
+    while the distance is set exactly to the circle's radius.
+    """
+    distance = calculate_distance(x, y, circle_center_x, circle_center_y)
+    if distance > radius:
+        angle = calculate_angle(x, y, circle_center_x, circle_center_y)
+        ray = distance - radius
+        move_x, move_y = convert_to_xy(angle, ray)
+        return x + move_x, y + move_y
+    else:
+        return x, y
+
+
+############################## Game related auxiliary functions ##############################
+
+
 def order_by_height(box):
     """
     Used to sort the list of boxes according to their height measured from the top of the box.
@@ -64,6 +118,77 @@ def order_by_distance(collision):
     Used to sort the list of colliding boxes according to their distance from the duck.
     """
     return calculate_distance(game["x"], game["y"], collision["box"]["x"], collision["box"]["y"])
+
+
+def update_position():
+    """
+    Updates the duck's position when using arrow keys to adjust angle and force.
+    """
+    x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
+    game["x"] = LAUNCH_X - x
+    game["y"] = LAUNCH_Y - y
+
+
+def targets_remaining(boxes):
+    """
+    Checks if there are any targets left in the list of boxes.
+    """
+    for box in boxes:
+        if box["type"] == "target":
+            return True
+    return False
+
+
+def is_inside_area(min_x, max_x, min_y, max_y, object):
+    """
+    Checks whether the object is inside the area defined by the minimum and maximum x and y values.
+    """
+    if max_y < object["y"] or min_y > object["y"] + object["h"]:
+        return False
+    elif max_x < object["x"] or min_x > object["x"] + object["w"]:
+        return False
+    else: 
+        return True
+
+
+def initial_state():
+    """
+    Puts the game back into its initial state: the duck is put back into the
+    launch position, its speed to zero, and its flight state to False.
+    """
+    game["x"] = LAUNCH_X
+    game["y"] = LAUNCH_Y
+    game["angle"] = 0
+    game["force"] = 0
+    game["x_velocity"] = 0
+    game["y_velocity"] = 0
+    game["flight"] = False
+    if game["ducks"] == 0:
+        if game["level"].endswith(".json"):
+            load_level(game["level"])
+        else:
+            game["level"] = "lose"
+
+
+def launch():
+    """
+    Launches a duck and calculates its starting velocity. Stores x and y velocity
+    components to the game dictionary.
+    """
+    if not game["flight"]:
+        game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
+        game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
+        game["flight"] = True
+        game["ducks"] -= 1
+
+
+def set_angle():
+    """
+    Sets the launch angle if player is using mouse controls.
+    """
+    x_distance = LAUNCH_X - game["x"]
+    y_distance = LAUNCH_Y - game["y"]
+    return math.degrees(math.atan2(y_distance, x_distance))
 
 
 def create_boxes(quantity):
@@ -130,59 +255,27 @@ def drop(boxes):
             boxes[i]["y"] -= boxes[i]["vy"]
 
 
-def initial_state():
+def drop_ducks(ducks):
     """
-    Puts the game back into its initial state: the duck is put back into the
-    launch position, its speed to zero, and its flight state to False.
+    Makes used ducks fall down to the ground.
     """
-    game["x"] = LAUNCH_X
-    game["y"] = LAUNCH_Y
-    game["angle"] = 0
-    game["force"] = 0
-    game["x_velocity"] = 0
-    game["y_velocity"] = 0
-    game["flight"] = False
-    if game["ducks"] == 0:
-        if game["level"].endswith(".json"):
-            load_level(game["level"])
-        else:
-            game["level"] = "lose"
-
-
-def launch():
-    """
-    Launches a duck and calculates its starting velocity. Stores x and y velocity
-    components to the game dictionary.
-    """
-    if not game["flight"]:
-        game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
-        game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
-        game["flight"] = True
-        game["ducks"] -= 1
-
-
-def is_inside_area(min_x, max_x, min_y, max_y, object):
-    """
-    Checks whether the object is inside the area defined by the minimum and maximum x and y values.
-    """
-    if max_y < object["y"] or min_y > object["y"] + object["h"]:
-        return False
-    elif max_x < object["x"] or min_x > object["x"] + object["w"]:
-        return False
-    else: 
-        return True
-
-
-def calculate_angle(x1, y1, x2, y2):
-    """
-    Returns the radian angle between two points. 
-    """
-    angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
-    if x2 < x1:  
-        angle += (math.pi / 2 - angle) * 2
-    if y2 < y1:
-        angle = angle * -1
-    return angle
+    for duck in ducks:
+        # Used ducks that are falling also destroy targets
+        for i in range(len(game["boxes"])):
+            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], game["boxes"][i]):
+                if game["boxes"][i]["type"] == "target":
+                    game["boxes"].remove(game["boxes"][i])
+                    box_breaking_sound.play()
+                    break
+                if not targets_remaining(game["boxes"]):
+                        initial_state()
+                        load_level(game["next_level"])
+                        break
+        if duck["y"] <= GROUND_LEVEL:
+            duck["y"] = GROUND_LEVEL
+            continue
+        duck["vy"] -= GRAVITATIONAL_ACCEL
+        duck["y"] += duck["vy"]
 
 
 # TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
@@ -235,8 +328,7 @@ def check_collisions():
     else:
         return False
 
-
-    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"]) # TODO: use this function in clamp_inside_circle -function
+    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
 
     # When bouncing left
     if game["x_velocity"] >= 0 and game["x"] <= bounce_from["x"]:
@@ -263,7 +355,6 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     velocity_axis is either "x_velocity" or "y_velocity".
     """
     x_movement, y_movement = convert_to_xy(angle, ray)
-    # Test whether the box should bounce left
     test_box = {"x": game["x"] + x_movement, 
                 "y": game["y"] + y_movement, 
                 "w": game["w"], 
@@ -276,71 +367,6 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
         return True
     else:
         return False
-
-def update(elapsed):
-    """
-    This is called 60 times/second.
-    """
-    game["time"] += elapsed
-    if game["level"].startswith("level"):
-        drop(game["boxes"])
-        drop_ducks(game["used_ducks"])
-    if game["flight"]:
-        check_collisions()
-        game["x"] += game["x_velocity"]
-        game["y"] += game["y_velocity"]
-        game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        # TODO: Level 2: shoot angle 75 force 90 and find out why the duck does that. Edit these 'slow_duck' related values if needed. Preferably fix the bouncing.
-        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 1.5:
-            game["slow_duck"] += elapsed
-        else:
-            game["slow_duck"] = 0
-        print("Slow duck:", game["slow_duck"])
-        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
-            game["used_ducks"].append({
-                "x": game["x"],
-                "y": game["y"],
-                "w": game["w"],
-                "h": game["h"],
-                "vy": 0
-            })
-            initial_state()
-        if not targets_remaining(game["boxes"]):
-            initial_state()
-            load_level(game["next_level"])
-
-
-def drop_ducks(ducks):
-    """
-    Makes used ducks fall down to the ground.
-    """
-    for duck in ducks:
-        # Used ducks that are falling also destroy targets
-        for i in range(len(game["boxes"])):
-            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], game["boxes"][i]):
-                if game["boxes"][i]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][i])
-                    box_breaking_sound.play()
-                    break
-                if not targets_remaining(game["boxes"]):
-                        initial_state()
-                        load_level(game["next_level"])
-                        break
-        if duck["y"] <= GROUND_LEVEL:
-            duck["y"] = GROUND_LEVEL
-            continue
-        duck["vy"] -= GRAVITATIONAL_ACCEL
-        duck["y"] += duck["vy"]
-
-
-def targets_remaining(boxes):
-    """
-    Checks if there are any targets left in the list of boxes.
-    """
-    for box in boxes:
-        if box["type"] == "target":
-            return True
-    return False
 
 
 def load_level(level):
@@ -375,6 +401,8 @@ def load_level(level):
         game["next_level"] = "level{}".format(level_number + 1)
         game["random_levels_passed"] = level_number - 1
 
+
+############################## Handler functions ##############################
 
 
 def draw():
@@ -481,15 +509,6 @@ def mouse_release_handler(x, y, button, modifiers):
         launch()
 
 
-def set_angle():
-    """
-    Sets the launch angle if player is using mouse controls.
-    """
-    x_distance = LAUNCH_X - game["x"]
-    y_distance = LAUNCH_Y - game["y"]
-    return math.degrees(math.atan2(y_distance, x_distance))
-
-
 def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     """
     This function is called when the mouse is moved while one of its buttons is
@@ -502,55 +521,6 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
         game["x"], game["y"] = clamp_inside_circle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
-
-
-def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
-    """
-    First the function finds out whether the given 
-    point is already inside the circle. If it is, its coordinates 
-    are simply returned as they are. However, if the point is outside 
-    the circle, it is "pulled" to the circle's perimeter. In 
-    doing so, the angle from the circle's center must be maintained 
-    while the distance is set exactly to the circle's radius.
-    """
-    distance = calculate_distance(x, y, circle_center_x, circle_center_y)
-    if distance > radius:
-        angle = math.atan(abs(y - circle_center_y) / abs(x - circle_center_x))
-        if circle_center_x < x:  
-            angle += (math.pi / 2 - angle) * 2
-        if circle_center_y < y:
-            angle = angle * -1
-        ray = distance - radius
-        move_x, move_y = convert_to_xy(angle, ray)
-        return x + move_x, y + move_y
-    else:
-        return x, y
-
-
-def calculate_distance(x1, y1, x2, y2):
-    """
-    Calculates the distance between two points and returns it.
-    """
-    return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
-
-
-def convert_to_xy(angle, ray):
-    """
-    Converts polar coordinates to cartesian coordinates.
-    Note that the angle given as a parameter must be a radian value.
-    """
-    x = ray * math.cos(angle)
-    y = ray * math.sin(angle)
-    return x, y
-
-
-def update_position():
-    """
-    Updates the duck's position when using arrow keys to adjust angle and force.
-    """
-    x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
-    game["x"] = LAUNCH_X - x
-    game["y"] = LAUNCH_Y - y
 
 
 def keypress(symbol, modifiers):
@@ -623,6 +593,39 @@ def keypress(symbol, modifiers):
 
         # TODO: Delete later
         if symbol == key.N:
+            initial_state()
+            load_level(game["next_level"])
+
+
+def update(elapsed):
+    """
+    This is called 60 times/second.
+    """
+    game["time"] += elapsed
+    if game["level"].startswith("level"):
+        drop(game["boxes"])
+        drop_ducks(game["used_ducks"])
+    if game["flight"]:
+        check_collisions()
+        game["x"] += game["x_velocity"]
+        game["y"] += game["y_velocity"]
+        game["y_velocity"] -= GRAVITATIONAL_ACCEL
+        # TODO: Level 2: shoot angle 75 force 90 and find out why the duck does that. Edit these 'slow_duck' related values if needed. Preferably fix the bouncing.
+        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 1.5:
+            game["slow_duck"] += elapsed
+        else:
+            game["slow_duck"] = 0
+        print("Slow duck:", game["slow_duck"])
+        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
+            game["used_ducks"].append({
+                "x": game["x"],
+                "y": game["y"],
+                "w": game["w"],
+                "h": game["h"],
+                "vy": 0
+            })
+            initial_state()
+        if not targets_remaining(game["boxes"]):
             initial_state()
             load_level(game["next_level"])
 
