@@ -48,8 +48,7 @@ game = {
 
 animation = {
     "animation_time": 0.0,
-    "frame": "duck",
-    "points": []
+    "frame": "duck"
 }
 
 
@@ -160,7 +159,6 @@ def launch():
         game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
         game["flight"] = True
         game["ducks"] -= 1
-        animation["points"].clear()
 
 
 def is_inside_area(min_x, max_x, min_y, max_y, object):
@@ -246,7 +244,6 @@ def check_collisions():
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
             return True
 
-
     # When bouncing right
     elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"]:
         ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
@@ -289,7 +286,6 @@ def update(elapsed):
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
-        #animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
         check_collisions()
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
@@ -352,7 +348,6 @@ def load_level(level):
     Loads a level.
     """
     game["used_ducks"].clear()
-    animation["points"].clear()
     # If the player wins the game
     if level == "win":
         game["level"] = level
@@ -436,10 +431,20 @@ def draw():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
-                #animation["points"].append({"x": game["x"] + 20, "y": game["y"] + 20})
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
+            # Aiming points
+            if game["mouse_down"]:
+                point_x = game["x"]
+                point_y = game["y"]
+                point_xv = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
+                point_yv = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
+                for i in range(20):
+                    sweeperlib.draw_text("o", point_x + 20, point_y + 20, color=(255, 255, 255, 255), size=10)
+                    point_x += point_xv
+                    point_y += point_yv
+                    point_yv -= GRAVITATIONAL_ACCEL
 
         # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
@@ -458,10 +463,6 @@ def draw():
         # Used ducks
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
-
-        # Points
-        #for point in animation["points"]:
-        #    sweeperlib.draw_text("o", point["x"], point["y"], color=(255, 255, 255, 255), size=10)
 
         # Info texts
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 100, size=20)
