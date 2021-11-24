@@ -331,19 +331,19 @@ def check_collisions():
     angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
 
     # When bouncing left
-    if game["x_velocity"] >= 0 and game["x"] <= bounce_from["x"]:
+    if game["x_velocity"] >= 0 and game["x"] + game["w"] <= bounce_from["x"]:
         ray = abs((bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle))
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
             return True
 
     # When bouncing right
-    elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"]:
+    elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"] + bounce_from["w"]:
         ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
             return True
 
     # When bouncing up
-    if game["y_velocity"] <= 0:
+    if game["y_velocity"] <= 0 and game["y"] >= bounce_from["y"] + bounce_from["h"]:
         ray = abs((game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle))
         if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
             return True
@@ -367,6 +367,42 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
         return True
     else:
         return False
+
+
+def check_overlaps():
+    overlapping_box = None
+
+    for box in game["boxes"]:
+        if is_inside_area(game["x"], game["x"] + game["w"], game["y"], game["y"] + game["h"], box):
+            if box["type"] == "obstacle":
+                overlapping_box = box
+                break
+
+    if not overlapping_box:
+        return False
+
+    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
+
+    # When bouncing left
+    if game["x_velocity"] >= 0:
+        ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
+        if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
+            return True
+
+    # When bouncing right
+    elif game["x_velocity"] <= 0:
+        ray = abs((game["x"] - overlapping_box["x"] - overlapping_box["w"]) / math.cos(angle))
+        if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
+            return True
+
+    # When bouncing up
+    if game["y_velocity"] <= 0:
+        ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
+        if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
+            return True
+            
+
+
 
 
 def load_level(level):
@@ -463,7 +499,7 @@ def draw():
         else:
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
             # Aiming points
-            if game["mouse_down"]:
+            if game["mouse_down"] or game["force"] > 0:
                 point_x = game["x"]
                 point_y = game["y"]
                 point_xv = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
@@ -606,6 +642,7 @@ def update(elapsed):
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
+        check_overlaps()
         check_collisions()
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
