@@ -1,6 +1,6 @@
 """
-Elementary programming 2021 course project: A Wee Bit Miffed Ducks.
-A game where you shoot ducks at objects.
+A Wee Bit Miffed Ducks: A game where you shoot ducks at objects.
+Elementary programming 2021 course project.
 """
 import math
 import sweeperlib
@@ -21,6 +21,8 @@ FORCE_FACTOR = 0.6
 ELASTICITY = 0.5
 
 box_breaking_sound = pyglet.media.load("box_breaking_sound.wav", streaming=False)
+duck_sound = pyglet.media.load("duck_sound.wav", streaming=False)
+bounce_sound = pyglet.media.load("bounce_sound.wav", streaming=False)
 
 game = {
     "x": LAUNCH_X,
@@ -180,6 +182,7 @@ def launch():
         game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
         game["flight"] = True
         game["ducks"] -= 1
+        duck_sound.play()
 
 
 def set_angle():
@@ -364,6 +367,8 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
         game["x"] = test_box["x"]
         game["y"] = test_box["y"]
         game[velocity_axis] = game[velocity_axis] * -ELASTICITY
+        if abs(game["x_velocity"]) > 1 or abs(game["y_velocity"]) > 2:
+            bounce_sound.play()
         return True
     else:
         return False
@@ -402,9 +407,6 @@ def check_overlaps():
             return True
             
 
-
-
-
 def load_level(level):
     """
     Loads a level.
@@ -427,7 +429,7 @@ def load_level(level):
             print("Failed to load level.")
     # Random levels
     else:
-        game["boxes"] = create_boxes(random.randint(5, 10))
+        game["boxes"] = create_boxes(random.randint(10, 15))
         game["level"] = level
         game["ducks"] = len(game["boxes"])
         for c in level:
@@ -648,11 +650,11 @@ def update(elapsed):
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
         # TODO: Level 2: shoot angle 75 force 90 and find out why the duck does that. Edit these 'slow_duck' related values if needed. Preferably fix the bouncing.
-        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 1.5:
+        # UPDATE: Works quite well now, but the bouncing is still very glitchy.
+        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 2:
             game["slow_duck"] += elapsed
         else:
             game["slow_duck"] = 0
-        print("Slow duck:", game["slow_duck"])
         if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
             game["used_ducks"].append({
                 "x": game["x"],
