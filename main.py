@@ -66,10 +66,10 @@ def calculate_distance(x1, y1, x2, y2):
 
 def calculate_angle(x1, y1, x2, y2):
     """
-    Returns the radian angle between two points. 
+    Returns the radian angle between two points.
     """
     angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
-    if x2 < x1:  
+    if x2 < x1:
         angle += (math.pi / 2 - angle) * 2
     if y2 < y1:
         angle = angle * -1
@@ -88,11 +88,11 @@ def convert_to_xy(angle, ray):
 
 def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
     """
-    First the function finds out whether the given 
-    point is already inside the circle. If it is, its coordinates 
-    are simply returned as they are. However, if the point is outside 
-    the circle, it is "pulled" to the circle's perimeter. In 
-    doing so, the angle from the circle's center must be maintained 
+    First the function finds out whether the given
+    point is already inside the circle. If it is, its coordinates
+    are simply returned as they are. However, if the point is outside
+    the circle, it is "pulled" to the circle's perimeter. In
+    doing so, the angle from the circle's center must be maintained
     while the distance is set exactly to the circle's radius.
     """
     distance = calculate_distance(x, y, circle_center_x, circle_center_y)
@@ -149,7 +149,7 @@ def is_inside_area(min_x, max_x, min_y, max_y, object):
         return False
     elif max_x < object["x"] or min_x > object["x"] + object["w"]:
         return False
-    else: 
+    else:
         return True
 
 
@@ -235,13 +235,13 @@ def drop(boxes):
         boxes[0]["initial_height"]
     except KeyError:
         for i in range(len(boxes)):
-            boxes[i]["initial_height"] = boxes[i]["y"] + boxes[i]["h"]  
+            boxes[i]["initial_height"] = boxes[i]["y"] + boxes[i]["h"]
     for i in range(len(boxes)):
         if boxes[i]["y"] <= GROUND_LEVEL:
             boxes[i]["y"] = GROUND_LEVEL
             boxes[i]["vy"] = 0
             continue
-         
+        
         allow_falling = True
         for j in range(len(boxes)):
             if i == j:
@@ -271,9 +271,9 @@ def drop_ducks(ducks):
                     box_breaking_sound.play()
                     break
                 if not targets_remaining(game["boxes"]):
-                        initial_state()
-                        load_level(game["next_level"])
-                        break
+                    initial_state()
+                    load_level(game["next_level"])
+                    break
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
@@ -301,7 +301,7 @@ def check_collisions():
         # Which boxes are colliding or are about to be passed by the duck
         for i in range(len(game["boxes"])):
             if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})    
+                collisions.append({"box": game["boxes"][i], "index": i})
     # Duck's direction: up and right
     elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
         # Which boxes are colliding or are about to be passed by the duck
@@ -317,7 +317,7 @@ def check_collisions():
 
     if collisions:
         collisions.sort(key=order_by_distance)
-        # Find the closest box and delete target boxes    
+        # Find the closest box and delete target boxes
         for collision in collisions:
             if collision["box"]["type"] == "target":
                 game["boxes"].remove(game["boxes"][collision["index"]])
@@ -358,9 +358,9 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     velocity_axis is either "x_velocity" or "y_velocity".
     """
     x_movement, y_movement = convert_to_xy(angle, ray)
-    test_box = {"x": game["x"] + x_movement, 
-                "y": game["y"] + y_movement, 
-                "w": game["w"], 
+    test_box = {"x": game["x"] + x_movement,
+                "y": game["y"] + y_movement,
+                "w": game["w"],
                 "h": game["h"]
                 }
     if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
@@ -405,7 +405,7 @@ def check_overlaps():
         ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
         if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
             return True
-            
+
 
 def load_level(level):
     """
@@ -473,7 +473,7 @@ def draw():
         sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
         sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 -72)
         sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 -144)
-        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)  
+        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)
 
     if game["level"].startswith("level"):
         # Grid TODO: Delete later
@@ -488,8 +488,8 @@ def draw():
                         sweeperlib.draw_text(str(x), x+5, y, size=10)
                     else:
                         sweeperlib.draw_text(".", x, y, size=20)
-        
-        # Duck animation         
+
+        # Duck animation
         if game["flight"]:
             if game["time"] >= animation["animation_time"] + 0.1:
                 animation["animation_time"] = game["time"]
@@ -580,7 +580,7 @@ def keypress(symbol, modifiers):
             game["grid"] = False
         else:
             game["grid"] = True
-        
+
 
     if symbol == key.F:
         if game["fullscreen"]:
@@ -603,7 +603,7 @@ def keypress(symbol, modifiers):
             if symbol == key.R:
                 initial_state()
                 load_level(game["level"])
-    
+
         if symbol == key.RIGHT:
             game["angle"] -= 5
             if game["angle"] < 0:
