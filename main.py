@@ -68,7 +68,11 @@ def calculate_angle(x1, y1, x2, y2):
     """
     Returns the radian angle between two points.
     """
-    angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
+    try:
+        angle = math.atan(abs(y1 - y2) / abs(x1 - x2))
+    except ZeroDivisionError:
+        print("Tried to divide by zero in calculate_angle")
+        angle = math.pi / 2
     if x2 < x1:
         angle += (math.pi / 2 - angle) * 2
     if y2 < y1:
@@ -282,7 +286,7 @@ def drop_ducks(ducks):
 
 
 # TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
-def check_collisions():
+def predict_collisions():
     """
     Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
     If the duck collides with an obstacle, it bounces off it if the circumstances are right.
@@ -390,19 +394,31 @@ def check_overlaps():
 
     # When bouncing left
     if game["x_velocity"] >= 0:
-        ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
+        try:
+            ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in check_overlaps: ray = abs((overlapping_box['x'] - game['w'] - game['x']) / math.cos(angle))")
+            ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
             return True
 
     # When bouncing right
     elif game["x_velocity"] <= 0:
-        ray = abs((game["x"] - overlapping_box["x"] - overlapping_box["w"]) / math.cos(angle))
+        try:
+            ray = abs((game["x"] - overlapping_box["x"] - overlapping_box["w"]) / math.cos(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - overlapping_box['x'] - overlapping_box['w']) / math.cos(angle))")
+            ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
             return True
 
     # When bouncing up
     if game["y_velocity"] <= 0:
-        ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
+        try:
+            ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - overlapping_box['y'] - overlapping_box['h']) / math.sin(angle))")
+            ray = abs(game["x"] - overlapping_box["x"])
         if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
             return True
 
@@ -645,7 +661,7 @@ def update(elapsed):
         drop_ducks(game["used_ducks"])
     if game["flight"]:
         check_overlaps()
-        check_collisions()
+        predict_collisions()
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
