@@ -354,19 +354,31 @@ def predict_collisions():
 
     # When bouncing left
     if game["x_velocity"] >= 0 and game["x"] + game["w"] <= bounce_from["x"]:
-        ray = abs((bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle))
+        try:
+            ray = abs((bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in predict_collisions: ray = abs((bounce_from['x'] - game['w'] - game['x']) / math.cos(angle))")
+            ray = abs(game["y"] - bounce_from["y"])
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
             return True
 
     # When bouncing right
     elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"] + bounce_from["w"]:
-        ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
+        try:
+            ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - bounce_from['x'] - bounce_from['w']) / math.cos(angle))")
+            ray = abs(game["y"] - bounce_from["y"])        
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
             return True
 
     # When bouncing up
     if game["y_velocity"] <= 0 and game["y"] >= bounce_from["y"] + bounce_from["h"]:
-        ray = abs((game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle))
+        try:
+            ray = abs((game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle))
+        except ZeroDivisionError:
+            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - bounce_from['y'] - bounce_from['h']) / math.sin(angle))")
+            ray = abs(game["x"] - bounce_from["x"])
         if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
             return True
 
@@ -575,7 +587,7 @@ def mouse_release_handler(x, y, button, modifiers):
     If the player is using mouse controls, this function is called when a mouse button is released.
     The function determines the angle and the force with which the duck will be launched and launches it.
     """
-    if not game["flight"] and game["level"].startswith("level"):
+    if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
         game["mouse_down"] = False
         game["angle"] = set_angle()
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
