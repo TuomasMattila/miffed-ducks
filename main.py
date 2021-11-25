@@ -285,6 +285,24 @@ def drop_ducks(ducks):
         duck["y"] += duck["vy"]
 
 
+def destroy_targets():
+    """
+    Destroys targets that are overlapping the duck.
+    """
+    new_box_list = []
+    for box in game["boxes"]:
+        if is_inside_area(game["x"], game["x"] + game["w"], game["y"], game["y"] + game["h"], box):
+            if box["type"] == "target":
+                box_breaking_sound.play()
+                continue
+            else:
+                new_box_list.append(box)
+        else:
+            new_box_list.append(box)
+
+    game["boxes"] = new_box_list
+
+
 # TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
 def predict_collisions():
     """
@@ -323,10 +341,7 @@ def predict_collisions():
         collisions.sort(key=order_by_distance)
         # Find the closest box and delete target boxes
         for collision in collisions:
-            if collision["box"]["type"] == "target":
-                game["boxes"].remove(game["boxes"][collision["index"]])
-                box_breaking_sound.play()
-            elif collision["box"]["type"] == "obstacle":
+            if collision["box"]["type"] == "obstacle":
                 bounce_from = collision["box"]
                 break
         collisions.clear()
@@ -370,7 +385,11 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
         game["x"] = test_box["x"]
         game["y"] = test_box["y"]
-        game[velocity_axis] = game[velocity_axis] * -ELASTICITY
+        if velocity_axis == "x_velocity":
+            game[velocity_axis] = game[velocity_axis] * -ELASTICITY
+        elif velocity_axis == "y_velocity":
+            game[velocity_axis] = game[velocity_axis] * -ELASTICITY
+            game["x_velocity"] = game["x_velocity"] * ELASTICITY
         if abs(game["x_velocity"]) > 1 or abs(game["y_velocity"]) > 2:
             bounce_sound.play()
         return True
@@ -660,14 +679,14 @@ def update(elapsed):
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
+        destroy_targets()
         check_overlaps()
         predict_collisions()
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        # TODO: Level 2: shoot angle 75 force 90 and find out why the duck does that. Edit these 'slow_duck' related values if needed. Preferably fix the bouncing.
-        # UPDATE: Works quite well now, but the bouncing is still very glitchy.
-        if abs(game["x_velocity"]) < 1.5 and abs(game["y_velocity"]) < 2:
+        # TODO: Level 2: shoot angle 60 force 75 and find out why the duck does that.
+        if abs(game["x_velocity"]) <= 1.5 and abs(game["y_velocity"]) <= 2.5:
             game["slow_duck"] += elapsed
         else:
             game["slow_duck"] = 0
