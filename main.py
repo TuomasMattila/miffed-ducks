@@ -361,8 +361,6 @@ def predict_collisions():
             print("Error: Tried to divide by zero in predict_collisions: ray = abs((bounce_from['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - bounce_from["y"])
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
-            print("predict_collisions: Bounce left")
-            print("bounce_from:", bounce_from)
             return True
 
     # When bouncing right
@@ -373,8 +371,6 @@ def predict_collisions():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - bounce_from['x'] - bounce_from['w']) / math.cos(angle))")
             ray = abs(game["y"] - bounce_from["y"])        
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
-            print("predict_collisions: Bounce right")
-            print("bounce_from:", bounce_from)
             return True
 
     # When bouncing up
@@ -385,8 +381,6 @@ def predict_collisions():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - bounce_from['y'] - bounce_from['h']) / math.sin(angle))")
             ray = abs(game["x"] - bounce_from["x"])
         if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
-            print("predict_collisions: Bounce up")
-            print("bounce_from:", bounce_from)
             return True
 
 
@@ -440,8 +434,6 @@ def check_overlaps():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((overlapping_box['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
-            print("check_overlaps: Bounce left")
-            print("overlapping_box:", overlapping_box)
             return True
 
     # When bouncing right
@@ -452,8 +444,6 @@ def check_overlaps():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - overlapping_box['x'] - overlapping_box['w']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
-            print("check_overlaps: Bounce right")
-            print("overlapping_box:", overlapping_box)
             return True
 
     # When bouncing up
@@ -464,8 +454,6 @@ def check_overlaps():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - overlapping_box['y'] - overlapping_box['h']) / math.sin(angle))")
             ray = abs(game["x"] - overlapping_box["x"])
         if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
-            print("check_overlaps: Bounce up")
-            print("overlapping_box:", overlapping_box)
             return True
 
 
