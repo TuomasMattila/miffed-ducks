@@ -227,7 +227,7 @@ def create_boxes(quantity):
 
     return boxlist
 
-
+# TODO: Still sometimes causes boxes to launch up in the air for some reason, fix that. (probably this functions fault)
 def drop(boxes):
     """
     Drops rectangular objects that are given as a list. Each object is to be
@@ -426,8 +426,6 @@ def check_overlaps():
 
     # When bouncing left
     if game["x_velocity"] >= 0 and not check_adjacent_boxes(overlapping_box, "left"):
-        # TODO: add a function here that checks to which directions the duck cannot bounce from the box
-        check_adjacent_boxes(overlapping_box, "left")
         try:
             ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
         except ZeroDivisionError:
@@ -732,7 +730,6 @@ def update(elapsed):
         game["x"] += game["x_velocity"]
         game["y"] += game["y_velocity"]
         game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        # TODO: Level 2: shoot angle 60 force 75 and find out why the duck does that.
         if abs(game["x_velocity"]) <= 1.5 and abs(game["y_velocity"]) <= 2.5:
             game["slow_duck"] += elapsed
         else:
@@ -750,8 +747,6 @@ def update(elapsed):
 
 
 if __name__ == "__main__":
-
-    sweeperlib.load_sprites("sprites")
     sweeperlib.load_duck("sprites")
     sweeperlib.create_window(width=WIN_WIDTH, height=WIN_HEIGHT, bg_color=BG_COLOR)
     sweeperlib.set_draw_handler(draw)
