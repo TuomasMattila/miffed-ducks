@@ -216,7 +216,7 @@ def create_boxes(quantity):
             type = "obstacle"
         box = {
             'type': type,
-            'x': random.randint(WIN_WIDTH - 400, WIN_WIDTH - 60),
+            'x': random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
             'y': random.randint(80, WIN_HEIGHT/2),
             'w': 40,
             'h': 40,
@@ -253,9 +253,10 @@ def drop(boxes):
             if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
             if is_inside_area(boxes[i]["x"], boxes[i]["x"] + boxes[i]["w"], boxes[i]["y"], boxes[i]["y"] + boxes[i]["h"], boxes[j]):
-                boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
-                boxes[i]["vy"] = 0
-                allow_falling = False      
+                if not boxes[i]["x"] == boxes[j]["x"] + boxes[j]["w"] and not boxes[i]["x"] + boxes[i]["w"] == boxes[j]["x"]:
+                    boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
+                    boxes[i]["vy"] = 0
+                    allow_falling = False      
 
         if allow_falling:
             boxes[i]["vy"] += GRAVITATIONAL_ACCEL
@@ -360,6 +361,8 @@ def predict_collisions():
             print("Error: Tried to divide by zero in predict_collisions: ray = abs((bounce_from['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - bounce_from["y"])
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
+            print("predict_collisions: Bounce left")
+            print("bounce_from:", bounce_from)
             return True
 
     # When bouncing right
@@ -370,6 +373,8 @@ def predict_collisions():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - bounce_from['x'] - bounce_from['w']) / math.cos(angle))")
             ray = abs(game["y"] - bounce_from["y"])        
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
+            print("predict_collisions: Bounce right")
+            print("bounce_from:", bounce_from)
             return True
 
     # When bouncing up
@@ -380,6 +385,8 @@ def predict_collisions():
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - bounce_from['y'] - bounce_from['h']) / math.sin(angle))")
             ray = abs(game["x"] - bounce_from["x"])
         if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
+            print("predict_collisions: Bounce up")
+            print("bounce_from:", bounce_from)
             return True
 
 
@@ -424,34 +431,71 @@ def check_overlaps():
     angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
 
     # When bouncing left
-    if game["x_velocity"] >= 0:
+    if game["x_velocity"] >= 0 and not check_adjacent_boxes(overlapping_box, "left"):
+        # TODO: add a function here that checks to which directions the duck cannot bounce from the box
+        check_adjacent_boxes(overlapping_box, "left")
         try:
             ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
         except ZeroDivisionError:
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((overlapping_box['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
+            print("check_overlaps: Bounce left")
+            print("overlapping_box:", overlapping_box)
             return True
 
     # When bouncing right
-    elif game["x_velocity"] <= 0:
+    elif game["x_velocity"] <= 0 and not check_adjacent_boxes(overlapping_box, "right"):
         try:
             ray = abs((game["x"] - overlapping_box["x"] - overlapping_box["w"]) / math.cos(angle))
         except ZeroDivisionError:
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - overlapping_box['x'] - overlapping_box['w']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
+            print("check_overlaps: Bounce right")
+            print("overlapping_box:", overlapping_box)
             return True
 
     # When bouncing up
-    if game["y_velocity"] <= 0:
+    if game["y_velocity"] <= 0 and not check_adjacent_boxes(overlapping_box, "up"):
         try:
             ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
         except ZeroDivisionError:
             print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - overlapping_box['y'] - overlapping_box['h']) / math.sin(angle))")
             ray = abs(game["x"] - overlapping_box["x"])
         if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
+            print("check_overlaps: Bounce up")
+            print("overlapping_box:", overlapping_box)
             return True
+
+
+def check_adjacent_boxes(box, side):
+    """
+    Checks if there is an adjacent box on certain side of the box.
+    Parameters:
+        - box: a box dictionary, with x, y, w and h values.
+        - side: "left", "right" or "up".
+    Returns:
+        - True, if there is an adjacent box on the side specified by the side parameter.
+        - False otherwise.
+    """
+    for other in game["boxes"]:
+        if side == "left":
+            if (box["y"] == other["y"] or 
+                    box["y"] + box["h"] == other["y"] + other["h"] and
+                    box["x"] == other["x"] + other["w"]):
+                return True
+        elif side == "right":
+            if (box["y"] == other["y"] or 
+                    box["y"] + box["h"] == other["y"] + other["h"] and
+                    box["x"] + box["w"] == other["x"]):
+                return True
+        elif side == "up":
+            if (box["y"] + box["h"] == other["y"] and
+                    (box["x"] == other["x"] or
+                    box["x"] + box["w"] == other["x"] + other["w"])):
+                return True
+    return False
 
 
 def load_level(level):
@@ -475,14 +519,14 @@ def load_level(level):
         except IOError:
             print("Failed to load level.")
     # Random levels
-    else:
-        game["boxes"] = create_boxes(random.randint(10, 15))
-        game["level"] = level
-        game["ducks"] = len(game["boxes"])
+    else: 
         for c in level:
             if c.isdigit():
                 level_number = int(c)
                 break
+        game["boxes"] = create_boxes(level_number * 2)
+        game["level"] = level
+        game["ducks"] = len(game["boxes"])
         game["next_level"] = "level{}".format(level_number + 1)
         game["random_levels_passed"] = level_number - 1
 
@@ -646,7 +690,7 @@ def keypress(symbol, modifiers):
 
     # Game keys
     if game["level"].startswith("level"):
-        if game["level"].endswith(".json"):
+        if game["level"].endswith(".json") or game["level"].endswith("1"):
             if symbol == key.R:
                 initial_state()
                 load_level(game["level"])
@@ -688,6 +732,9 @@ def update(elapsed):
     """
     game["time"] += elapsed
     if game["level"].startswith("level"):
+        if not targets_remaining(game["boxes"]):
+            initial_state()
+            load_level(game["next_level"])
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
     if game["flight"]:
@@ -711,9 +758,7 @@ def update(elapsed):
                 "vy": 0
             })
             initial_state()
-        if not targets_remaining(game["boxes"]):
-            initial_state()
-            load_level(game["next_level"])
+
 
 
 if __name__ == "__main__":
