@@ -123,7 +123,7 @@ def order_by_distance(collision):
     """
     Used to sort the list of colliding boxes according to their distance from the duck.
     """
-    return calculate_distance(game["x"], game["y"], collision["box"]["x"], collision["box"]["y"])
+    return calculate_distance(game["x"], game["y"], collision["x"], collision["y"])
 
 
 def update_position():
@@ -135,11 +135,11 @@ def update_position():
     game["y"] = LAUNCH_Y - y
 
 
-def targets_remaining(boxes):
+def targets_remaining():
     """
     Checks if there are any targets left in the list of boxes.
     """
-    for box in boxes:
+    for box in game["boxes"]:
         if box["type"] == "target":
             return True
     return False
@@ -169,7 +169,7 @@ def initial_state():
     game["x_velocity"] = 0
     game["y_velocity"] = 0
     game["flight"] = False
-    if game["ducks"] == 0:
+    if game["ducks"] == 0 and not targets_remaining():
         if game["level"].endswith(".json"):
             load_level(game["level"])
         else:
@@ -238,33 +238,33 @@ def drop(boxes):
     try:
         boxes[0]["initial_height"]
     except KeyError:
-        for i in range(len(boxes)):
-            boxes[i]["initial_height"] = boxes[i]["y"] + boxes[i]["h"]
-    for i in range(len(boxes)):
-        if boxes[i]["y"] <= GROUND_LEVEL:
-            boxes[i]["y"] = GROUND_LEVEL
-            boxes[i]["vy"] = 0
+        for box in game["boxes"]:
+            box["initial_height"] = box["y"] + box["h"]
+    for box in game["boxes"]:
+        if box["y"] <= GROUND_LEVEL:
+            box["y"] = GROUND_LEVEL
+            box["vy"] = 0
             continue
         
         allow_falling = True
-        for j in range(len(boxes)):
-            if i == j:
+        for other in game["boxes"]:
+            if box == other:
                 continue
-            if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
+            if box["initial_height"] < other["initial_height"]:
                 continue
-            elif boxes[i]["initial_height"] == boxes[j]["initial_height"]:
-                boxes[i]["initial_height"] += 1
-            if is_inside_area(boxes[i]["x"], boxes[i]["x"] + boxes[i]["w"], boxes[i]["y"], boxes[i]["y"] + boxes[i]["h"], boxes[j]):
-                if not boxes[i]["x"] == boxes[j]["x"] + boxes[j]["w"] and not boxes[i]["x"] + boxes[i]["w"] == boxes[j]["x"]:
-                    boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
-                    boxes[i]["vy"] = 0
+            elif box["initial_height"] == other["initial_height"]:
+                box["initial_height"] += 1
+            if is_inside_area(box["x"], box["x"] + box["w"], box["y"], box["y"] + box["h"], other):
+                if not box["x"] == other["x"] + other["w"] and not box["x"] + box["w"] == other["x"]:
+                    box["y"] = other["y"] + other["h"]
+                    box["vy"] = 0
                     allow_falling = False      
 
         if allow_falling:
-            boxes[i]["vy"] += GRAVITATIONAL_ACCEL
-            boxes[i]["y"] -= boxes[i]["vy"]
+            box["vy"] += GRAVITATIONAL_ACCEL
+            box["y"] -= box["vy"]
 
-
+# TODO: Get rid off the unnecessary use of index numbers.
 def drop_ducks(ducks):
     """
     Makes used ducks fall down to the ground.
@@ -276,10 +276,9 @@ def drop_ducks(ducks):
                 if game["boxes"][i]["type"] == "target":
                     game["boxes"].remove(game["boxes"][i])
                     box_breaking_sound.play()
-                    break
-                if not targets_remaining(game["boxes"]):
-                    initial_state()
-                    load_level(game["next_level"])
+                    if not targets_remaining():
+                        initial_state()
+                        load_level(game["next_level"])
                     break
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
@@ -317,34 +316,34 @@ def predict_collisions():
     # Duck's direction: down and right
     if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
         # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
+        for box in game["boxes"]:
+            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
+                collisions.append(box)
     # Duck's direction: down and left
     elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
         # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
+        for box in game["boxes"]:
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
+                collisions.append(box)
     # Duck's direction: up and right
     elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
         # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
+        for box in game["boxes"]:
+            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
+                collisions.append(box)
     # Duck's direction: up and left
     elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
         # Which boxes are colliding or are about to be passed by the duck
-        for i in range(len(game["boxes"])):
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], game["boxes"][i]):
-                collisions.append({"box": game["boxes"][i], "index": i})
+        for box in game["boxes"]:
+            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
+                collisions.append(box)
 
     if collisions:
         collisions.sort(key=order_by_distance)
         # Find the closest box and delete target boxes
         for collision in collisions:
-            if collision["box"]["type"] == "obstacle":
-                bounce_from = collision["box"]
+            if collision["type"] == "obstacle":
+                bounce_from = collision
                 break
         collisions.clear()
         if not bounce_from:
@@ -593,6 +592,7 @@ def draw():
         # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
 
+        # TODO: Get rid off the unnecessary use of index numbers.
         # Boxes
         for i in range(len(game["boxes"])):
             if game["boxes"][i]["type"] == "target":
@@ -712,14 +712,19 @@ def keypress(symbol, modifiers):
             initial_state()
             load_level(game["next_level"])
 
-
+# TODO: You can still lose a random level, if you destroy the last box using the last duck and the duck destroys the last box while the duck is on the ground.
+# TLDR: Make sure the player always passes a level if there are no targets left.
+# Testing:
+# In first randomized level, make sure the target box is on the ground. Then, miss the target with the first duck and shoot it with the second. This causes the player to loose sometimes.
+# Possible solution: Do not load levels in initial_state(). Only load levels using the load_level() -function independently.
+#                    Also, only use the load_level() -function in this update() -function.
 def update(elapsed):
     """
     This is called 60 times/second.
     """
     game["time"] += elapsed
     if game["level"].startswith("level"):
-        if not targets_remaining(game["boxes"]):
+        if not targets_remaining():
             initial_state()
             load_level(game["next_level"])
         drop(game["boxes"])
