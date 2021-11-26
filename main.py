@@ -227,7 +227,7 @@ def create_boxes(quantity):
 
     return boxlist
 
-# TODO: Still sometimes causes boxes to launch up in the air for some reason, fix that. (probably this functions fault)
+
 def drop(boxes):
     """
     Drops rectangular objects that are given as a list. Each object is to be
@@ -252,6 +252,8 @@ def drop(boxes):
                 continue
             if boxes[i]["initial_height"] < boxes[j]["initial_height"]:
                 continue
+            elif boxes[i]["initial_height"] == boxes[j]["initial_height"]:
+                boxes[i]["initial_height"] += 1
             if is_inside_area(boxes[i]["x"], boxes[i]["x"] + boxes[i]["w"], boxes[i]["y"], boxes[i]["y"] + boxes[i]["h"], boxes[j]):
                 if not boxes[i]["x"] == boxes[j]["x"] + boxes[j]["w"] and not boxes[i]["x"] + boxes[i]["w"] == boxes[j]["x"]:
                     boxes[i]["y"] = boxes[j]["y"] + boxes[j]["h"]
@@ -304,7 +306,6 @@ def destroy_targets():
     game["boxes"] = new_box_list
 
 
-# TODO: Make this function smaller; find the common parts and reduce repeated code to the minimum.
 def predict_collisions():
     """
     Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
