@@ -169,11 +169,6 @@ def initial_state():
     game["x_velocity"] = 0
     game["y_velocity"] = 0
     game["flight"] = False
-    if game["ducks"] == 0 and not targets_remaining():
-        if game["level"].endswith(".json"):
-            load_level(game["level"])
-        else:
-            game["level"] = "lose"
 
 
 def launch():
@@ -264,22 +259,14 @@ def drop(boxes):
             box["vy"] += GRAVITATIONAL_ACCEL
             box["y"] -= box["vy"]
 
-# TODO: Get rid off the unnecessary use of index numbers.
+
 def drop_ducks(ducks):
     """
     Makes used ducks fall down to the ground.
     """
     for duck in ducks:
         # Used ducks that are falling also destroy targets
-        for i in range(len(game["boxes"])):
-            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], game["boxes"][i]):
-                if game["boxes"][i]["type"] == "target":
-                    game["boxes"].remove(game["boxes"][i])
-                    box_breaking_sound.play()
-                    if not targets_remaining():
-                        initial_state()
-                        load_level(game["next_level"])
-                    break
+        destroy_targets(duck)
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
@@ -287,13 +274,13 @@ def drop_ducks(ducks):
         duck["y"] += duck["vy"]
 
 
-def destroy_targets():
+def destroy_targets(duck):
     """
     Destroys targets that are overlapping the duck.
     """
     new_box_list = []
     for box in game["boxes"]:
-        if is_inside_area(game["x"], game["x"] + game["w"], game["y"], game["y"] + game["h"], box):
+        if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], box):
             if box["type"] == "target":
                 box_breaking_sound.play()
                 continue
@@ -724,32 +711,37 @@ def update(elapsed):
     """
     game["time"] += elapsed
     if game["level"].startswith("level"):
-        if not targets_remaining():
-            initial_state()
-            load_level(game["next_level"])
         drop(game["boxes"])
         drop_ducks(game["used_ducks"])
-    if game["flight"]:
-        destroy_targets()
-        check_overlaps()
-        predict_collisions()
-        game["x"] += game["x_velocity"]
-        game["y"] += game["y_velocity"]
-        game["y_velocity"] -= GRAVITATIONAL_ACCEL
-        if abs(game["x_velocity"]) <= 1.5 and abs(game["y_velocity"]) <= 2.5:
-            game["slow_duck"] += elapsed
+        if game["flight"]:
+            destroy_targets(game)
+            check_overlaps()
+            predict_collisions()
+            game["x"] += game["x_velocity"]
+            game["y"] += game["y_velocity"]
+            game["y_velocity"] -= GRAVITATIONAL_ACCEL
+            if abs(game["x_velocity"]) <= 1.5 and abs(game["y_velocity"]) <= 2.5:
+                game["slow_duck"] += elapsed
+            else:
+                game["slow_duck"] = 0
+            if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
+                game["used_ducks"].append({
+                    "x": game["x"],
+                    "y": game["y"],
+                    "w": game["w"],
+                    "h": game["h"],
+                    "vy": 0
+                })
+                initial_state()
         else:
-            game["slow_duck"] = 0
-        if game["y"] <= GROUND_LEVEL or game["slow_duck"] > 0.1:
-            game["used_ducks"].append({
-                "x": game["x"],
-                "y": game["y"],
-                "w": game["w"],
-                "h": game["h"],
-                "vy": 0
-            })
-            initial_state()
-
+            if not targets_remaining():
+                load_level(game["next_level"])
+            elif game["ducks"] == 0:
+                if game["level"].endswith(".json"):
+                    load_level(game["level"])
+                else:
+                    game["level"] = "lose"
+            
 
 
 if __name__ == "__main__":
