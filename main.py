@@ -270,8 +270,15 @@ def drop_ducks(ducks):
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
             continue
-        duck["vy"] -= GRAVITATIONAL_ACCEL
-        duck["y"] += duck["vy"]
+        allow_falling = True
+        for box in game["boxes"]:
+            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], box):
+                duck["y"] = box["y"] + box["h"]
+                duck["vy"] == 0
+                allow_falling = False
+        if allow_falling:
+            duck["vy"] -= GRAVITATIONAL_ACCEL
+            duck["y"] += duck["vy"]
 
 
 def destroy_targets(duck):
@@ -288,7 +295,6 @@ def destroy_targets(duck):
                 new_box_list.append(box)
         else:
             new_box_list.append(box)
-
     game["boxes"] = new_box_list
 
 
@@ -302,25 +308,21 @@ def predict_collisions():
 
     # Duck's direction: down and right
     if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
-        # Which boxes are colliding or are about to be passed by the duck
         for box in game["boxes"]:
             if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
                 collisions.append(box)
     # Duck's direction: down and left
     elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
-        # Which boxes are colliding or are about to be passed by the duck
         for box in game["boxes"]:
             if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
                 collisions.append(box)
     # Duck's direction: up and right
     elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
-        # Which boxes are colliding or are about to be passed by the duck
         for box in game["boxes"]:
             if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
                 collisions.append(box)
     # Duck's direction: up and left
     elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
-        # Which boxes are colliding or are about to be passed by the duck
         for box in game["boxes"]:
             if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
                 collisions.append(box)
@@ -507,7 +509,7 @@ def load_level(level):
 ############################## Handler functions ##############################
 
 
-def draw():
+def draw_handler():
     """
     This function handles interface's and objects drawing.
     """
@@ -553,8 +555,8 @@ def draw():
                     else:
                         sweeperlib.draw_text(".", x, y, size=20)
 
-        # Duck animation
         if game["flight"]:
+            # Duck animation
             if game["time"] >= animation["animation_time"] + 0.1:
                 animation["animation_time"] = game["time"]
                 if animation["frame"] == "duck":
@@ -579,13 +581,12 @@ def draw():
         # Sling
         sweeperlib.prepare_sprite("sling", LAUNCH_X - 20, GROUND_LEVEL)
 
-        # TODO: Get rid off the unnecessary use of index numbers.
         # Boxes
-        for i in range(len(game["boxes"])):
-            if game["boxes"][i]["type"] == "target":
-                sweeperlib.prepare_sprite("target", game["boxes"][i]["x"], game["boxes"][i]["y"])
-            elif game["boxes"][i]["type"] == "obstacle":
-                sweeperlib.prepare_sprite("obstacle", game["boxes"][i]["x"], game["boxes"][i]["y"])
+        for box in game["boxes"]:
+            if box["type"] == "target":
+                sweeperlib.prepare_sprite("target", box["x"], box["y"])
+            elif box["type"] == "obstacle":
+                sweeperlib.prepare_sprite("obstacle", box["x"], box["y"])
 
         # Remaining ducks
         for i in range(game["ducks"] - 1):
@@ -612,7 +613,7 @@ def mouse_release_handler(x, y, button, modifiers):
         launch()
 
 
-def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
+def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     """
     This function is called when the mouse is moved while one of its buttons is
     pressed down. Moves a box on the screen the same amount as the cursor moved.
@@ -626,7 +627,7 @@ def handle_drag(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
 
 
-def keypress(symbol, modifiers):
+def keyboard_handler(symbol, modifiers):
     """
     This function handles keyboard input.
     """
@@ -699,12 +700,7 @@ def keypress(symbol, modifiers):
             initial_state()
             load_level(game["next_level"])
 
-# TODO: You can still lose a random level, if you destroy the last box using the last duck and the duck destroys the last box while the duck is on the ground.
-# TLDR: Make sure the player always passes a level if there are no targets left.
-# Testing:
-# In first randomized level, make sure the target box is on the ground. Then, miss the target with the first duck and shoot it with the second. This causes the player to loose sometimes.
-# Possible solution: Do not load levels in initial_state(). Only load levels using the load_level() -function independently.
-#                    Also, only use the load_level() -function in this update() -function.
+
 def update(elapsed):
     """
     This is called 60 times/second.
@@ -747,9 +743,9 @@ def update(elapsed):
 if __name__ == "__main__":
     sweeperlib.load_duck("sprites")
     sweeperlib.create_window(width=WIN_WIDTH, height=WIN_HEIGHT, bg_color=BG_COLOR)
-    sweeperlib.set_draw_handler(draw)
+    sweeperlib.set_draw_handler(draw_handler)
     sweeperlib.set_release_handler(mouse_release_handler)
-    sweeperlib.set_drag_handler(handle_drag)
-    sweeperlib.set_keyboard_handler(keypress)
+    sweeperlib.set_drag_handler(drag_handler)
+    sweeperlib.set_keyboard_handler(keyboard_handler)
     sweeperlib.set_interval_handler(update, interval=1/60)
     sweeperlib.start()
