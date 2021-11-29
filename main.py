@@ -575,8 +575,14 @@ def draw_handler():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
+            # TODO: find out how to keep these lines behind the duck.
+            sweeperlib.prepare_line(LAUNCH_X - 16, LAUNCH_Y + 43, LAUNCH_X + 20, LAUNCH_Y + 40, 5, (125, 125, 125))
+            sweeperlib.prepare_line(LAUNCH_X + 55, LAUNCH_Y + 43, LAUNCH_X + 20, LAUNCH_Y + 40, 5, (125, 125, 125))
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
+            
         else:
+            sweeperlib.prepare_line(LAUNCH_X - 16, LAUNCH_Y + 43, game["x"] + 20, game["y"] + 10, 5, (125, 125, 125))
+            sweeperlib.prepare_line(LAUNCH_X + 55, LAUNCH_Y + 43, game["x"] + 20, game["y"] + 10, 5, (125, 125, 125))
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
             # Aiming points
             if game["mouse_down"] or game["force"] > 0:

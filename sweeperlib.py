@@ -28,6 +28,7 @@ if modifiers & sweeperlib.MOD_SHIFT:
 """
 
 import pyglet
+from pyglet import shapes
 from pyglet.gl import glEnable, GL_TEXTURE_2D
 
 MOUSE_LEFT = pyglet.window.mouse.LEFT
@@ -414,6 +415,28 @@ def draw_sprites():
 
     graphics["batch"].draw()
     graphics["sprites"].clear()
+
+# This function was added by Tuomas Mattila
+def prepare_line(x1, y1, x2, y2, width=1, color=(255, 255, 255)):
+    """
+    Adds a line shape sprite to the batch.
+
+    :Parameters:
+    `x1` : float
+        The first X coordinate of the line.
+    `y1` : float
+        The first Y coordinate of the line.
+    `x2` : float
+        The second X coordinate of the line.
+    `y2` : float
+        The second Y coordinate of the line.
+    `width` : float
+        The desired width of the line.
+    `color` : (int, int, int)
+        The RGB color of the line, specified as a tuple of three ints in the range of 0-255.
+    """
+    graphics["sprites"].append(shapes.Line(x1, y1, x2, y2, width=width, color=color, batch=graphics["batch"]))
+    
 
 if __name__ == "__main__":
     # Disabling two pylint warnings because it would complain about the test
