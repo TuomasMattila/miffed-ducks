@@ -44,7 +44,7 @@ game = {
     "random_levels_passed": 0,
     "used_ducks": [],
     "fullscreen": True,
-    "grid": False, # TODO: Delete later
+    "grid": False,  # TODO: Delete later
     "slow_duck": 0
 }
 
@@ -240,7 +240,7 @@ def drop(boxes):
             box["y"] = GROUND_LEVEL
             box["vy"] = 0
             continue
-        
+
         allow_falling = True
         for other in game["boxes"]:
             if box == other:
@@ -253,7 +253,7 @@ def drop(boxes):
                 if not box["x"] == other["x"] + other["w"] and not box["x"] + box["w"] == other["x"]:
                     box["y"] = other["y"] + other["h"]
                     box["vy"] = 0
-                    allow_falling = False      
+                    allow_falling = False
 
         if allow_falling:
             box["vy"] += GRAVITATIONAL_ACCEL
@@ -262,7 +262,10 @@ def drop(boxes):
 
 def drop_ducks(ducks):
     """
-    Makes used ducks fall down to the ground.
+    Makes used ducks fall down.
+    Parameters:
+    - ducks: A list of dictionaries that describe ducks.
+             The dictionaries must have x, y, w, h and vy values.
     """
     for duck in ducks:
         # Used ducks that are falling also destroy targets
@@ -284,6 +287,9 @@ def drop_ducks(ducks):
 def destroy_targets(duck):
     """
     Destroys targets that are overlapping the duck.
+    Parameters:
+    - duck: A dictionary describing a duck.
+            Has to have x, y, w and h values.
     """
     new_box_list = []
     for box in game["boxes"]:
@@ -300,7 +306,7 @@ def destroy_targets(duck):
 
 def predict_collisions():
     """
-    Checks whether the duck collides with boxes. If a target is colliding, it is destroyed.
+    Checks whether the duck collides or is about to collide with boxes.
     If the duck collides with an obstacle, it bounces off it if the circumstances are right.
     """
     collisions = []
@@ -376,7 +382,14 @@ def predict_collisions():
 def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     """
     Tests if the duck should bounce off the bounce_from -obstacle in the direction defined by velocity_axis.
-    velocity_axis is either "x_velocity" or "y_velocity".
+    Parameters:
+    - angle: The direction to which the duck is currently heading, in radians.
+    - ray: The distance from duck's current position to the assumed next position.
+    - bounce_from: A dictionary which describes a box and has x, y, w and h values.
+    - velocity_axis: Either "x_velocity" or "y_velocity".
+    Returns:
+    - True, if the duck bounces off the bounce_from -obstacle.
+    - False otherwise.
     """
     x_movement, y_movement = convert_to_xy(angle, ray)
     test_box = {"x": game["x"] + x_movement,
@@ -400,6 +413,10 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
 
 
 def check_overlaps():
+    """
+    Checks if the duck is currently overlapping with an obstacle.
+    If it is, it bounces into an appropriate direction from the obstacle.
+    """
     overlapping_box = None
 
     for box in game["boxes"]:
@@ -456,19 +473,19 @@ def check_adjacent_boxes(box, side):
     """
     for other in game["boxes"]:
         if side == "left":
-            if (box["y"] == other["y"] or 
+            if (box["y"] == other["y"] or
                     box["y"] + box["h"] == other["y"] + other["h"] and
                     box["x"] == other["x"] + other["w"]):
                 return True
         elif side == "right":
-            if (box["y"] == other["y"] or 
+            if (box["y"] == other["y"] or
                     box["y"] + box["h"] == other["y"] + other["h"] and
                     box["x"] + box["w"] == other["x"]):
                 return True
         elif side == "up":
             if (box["y"] + box["h"] == other["y"] and
                     (box["x"] == other["x"] or
-                    box["x"] + box["w"] == other["x"] + other["w"])):
+                     box["x"] + box["w"] == other["x"] + other["w"])):
                 return True
     return False
 
@@ -476,6 +493,14 @@ def check_adjacent_boxes(box, side):
 def load_level(level):
     """
     Loads a level.
+    Parameters:
+    - level: String of characters defining the level to be loaded.
+             Possible values:
+             - "menu", when the player has pressed M to go to the menu.
+             - "levelX.json", where X is a normal level's number.
+             - "levelX", where X is a random level's number.
+             - "lose", when the player loses in random levels -mode.
+             - "win", when the player passes all normal levels.
     """
     game["used_ducks"].clear()
     # If the player wins the game
@@ -494,7 +519,7 @@ def load_level(level):
         except IOError:
             print("Failed to load level.")
     # Random levels
-    else: 
+    else:
         for c in level:
             if c.isdigit():
                 level_number = int(c)
@@ -511,11 +536,12 @@ def load_level(level):
 
 def draw_handler():
     """
-    This function handles interface's and objects drawing.
+    This function draws everything in the game.
     """
     sweeperlib.clear_window()
     sweeperlib.draw_background()
     sweeperlib.begin_sprite_draw()
+
     if game["level"] == "menu":
         sweeperlib.draw_text("A Wee Bit Miffed Ducks", 40, WIN_HEIGHT - 150, size=40)
         sweeperlib.prepare_sprite("duck", 650, WIN_HEIGHT - 140)
@@ -532,14 +558,14 @@ def draw_handler():
 
     if game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
-        sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -72)
-        sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 -144)
+        sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 - 72)
+        sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 - 144)
 
     if game["level"] == "lose":
         sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
-        sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 -72)
-        sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 -144)
-        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 -216)
+        sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 - 72)
+        sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 - 144)
+        sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 - 216)
 
     if game["level"].startswith("level"):
         # Grid TODO: Delete later
@@ -597,13 +623,18 @@ def draw_handler():
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
 
         # Info texts
-        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(game["level"].lstrip("level").rstrip(".json"), game["angle"], game["force"], game["ducks"]), 40, WIN_HEIGHT - 100, size=20)
+        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(
+                game["level"].lstrip("level").rstrip(".json"), 
+                game["angle"], 
+                game["force"], 
+                game["ducks"]
+                ), 40, WIN_HEIGHT - 100, size=20)
     sweeperlib.draw_sprites()
 
 
 def mouse_release_handler(x, y, button, modifiers):
     """
-    If the player is using mouse controls, this function is called when a mouse button is released.
+    This function is called when a mouse button is released.
     The function determines the angle and the force with which the duck will be launched and launches it.
     """
     if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
@@ -616,7 +647,7 @@ def mouse_release_handler(x, y, button, modifiers):
 def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
     """
     This function is called when the mouse is moved while one of its buttons is
-    pressed down. Moves a box on the screen the same amount as the cursor moved.
+    pressed down. This is used to drag the duck.
     """
     if not game["flight"] and game["level"].startswith("level"):
         game["mouse_down"] = True
@@ -646,7 +677,6 @@ def keyboard_handler(symbol, modifiers):
             game["grid"] = False
         else:
             game["grid"] = True
-
 
     if symbol == key.F:
         if game["fullscreen"]:
@@ -737,7 +767,6 @@ def update(elapsed):
                     load_level(game["level"])
                 else:
                     game["level"] = "lose"
-            
 
 
 if __name__ == "__main__":
