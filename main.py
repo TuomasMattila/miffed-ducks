@@ -262,16 +262,15 @@ def drop(boxes):
             box["vy"] += GRAVITATIONAL_ACCEL
             box["y"] -= box["vy"]
 
-# TODO: Test if this actually works by making some of the obstacles in level 2 targets.
+
 def drop_ducks(ducks):
     """
-    Makes used ducks fall down.
+    Makes used ducks fall down and destroy targets.
     Parameters:
     - ducks: A list of dictionaries that describe ducks.
              The dictionaries must have x, y, w, h and vy values.
     """
     for duck in ducks:
-        # Used ducks that are falling also destroy targets
         destroy_targets(duck)
         if duck["y"] <= GROUND_LEVEL:
             duck["y"] = GROUND_LEVEL
