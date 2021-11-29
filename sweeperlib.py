@@ -48,6 +48,8 @@ graphics = {
     "window": None,
     "background": None,
     "bg_color": None,
+    "first_batch": None, # Separate batch for the straps of the slingshot to keep them behind other sprites. -Tuomas Mattila
+    "lines": [], # List for the line sprites.
     "batch": None,
     "sprites": [],
     "images": {}
@@ -383,6 +385,7 @@ def begin_sprite_draw():
     """
 
     graphics["batch"] = pyglet.graphics.Batch()
+    graphics["first_batch"] = pyglet.graphics.Batch()
 
 def prepare_sprite(key, x, y):
     """
@@ -413,13 +416,17 @@ def draw_sprites():
     when you have prepared all sprites to be drawn.
     """
 
+    graphics["first_batch"].draw()
     graphics["batch"].draw()
+    graphics["lines"].clear()
     graphics["sprites"].clear()
 
 # This function was added by Tuomas Mattila
 def prepare_line(x1, y1, x2, y2, width=1, color=(255, 255, 255)):
     """
-    Adds a line shape sprite to the batch.
+    Adds a line shape sprite to the first batch.
+    Lines have to be in the first batch for them to
+    render behind other sprites.
 
     :Parameters:
     `x1` : float
@@ -435,7 +442,7 @@ def prepare_line(x1, y1, x2, y2, width=1, color=(255, 255, 255)):
     `color` : (int, int, int)
         The RGB color of the line, specified as a tuple of three ints in the range of 0-255.
     """
-    graphics["sprites"].append(shapes.Line(x1, y1, x2, y2, width=width, color=color, batch=graphics["batch"]))
+    graphics["lines"].append(shapes.Line(x1, y1, x2, y2, width=width, color=color, batch=graphics["first_batch"]))
     
 
 if __name__ == "__main__":
