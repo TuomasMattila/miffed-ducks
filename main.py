@@ -173,7 +173,7 @@ def initial_state():
 
 def launch():
     """
-    Launches a duck and calculates its starting velocity. Stores x and y velocity
+    Launches a duck and calculates its starting velocity. Stores x- and y-velocity
     components to the game dictionary.
     """
     if not game["flight"]:
@@ -183,7 +183,7 @@ def launch():
         game["ducks"] -= 1
         duck_sound.play()
 
-
+# TODO: Find out if I could use this function every time an angle calculation is needed.
 def set_angle():
     """
     Sets the launch angle if player is using mouse controls.
@@ -228,6 +228,9 @@ def drop(boxes):
     Drops rectangular objects that are given as a list. Each object is to be
     defined as a dictionary with x and y coordinates, width, height, and falling
     velocity. Drops boxes for one time unit.
+    Parameters:
+    - boxes: A list of dictionaries that describe boxes.
+             The dictionaries must have x, y, w, h and vy values.
     """
     boxes.sort(key=order_by_height)
     try:
@@ -259,7 +262,7 @@ def drop(boxes):
             box["vy"] += GRAVITATIONAL_ACCEL
             box["y"] -= box["vy"]
 
-
+# TODO: Test if this actually works by making some of the obstacles in level 2 targets.
 def drop_ducks(ducks):
     """
     Makes used ducks fall down.
