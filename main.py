@@ -123,7 +123,7 @@ def update_position():
     """
     Updates the duck's position when using arrow keys to adjust angle and force.
     """
-    x, y = convert_to_xy(game["angle"], game["force"])
+    x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
     game["x"] = LAUNCH_X - x
     game["y"] = LAUNCH_Y - y
 
@@ -170,8 +170,8 @@ def launch():
     components to the game dictionary.
     """
     if not game["flight"]:
-        game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(game["angle"])
-        game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(game["angle"])
+        game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
+        game["y_velocity"] = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
         game["flight"] = True
         game["ducks"] -= 1
         duck_sound.play()
@@ -582,8 +582,8 @@ def draw_handler():
             if game["mouse_down"] or game["force"] > 0:
                 point_x = game["x"]
                 point_y = game["y"]
-                point_xv = game["force"] * FORCE_FACTOR * math.cos(game["angle"])
-                point_yv = game["force"] * FORCE_FACTOR * math.sin(game["angle"])
+                point_xv = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
+                point_yv = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
                 for i in range(20):
                     sweeperlib.draw_text("o", point_x + 20, point_y + 20, color=(255, 255, 255, 255), size=10)
                     point_x += point_xv
@@ -611,7 +611,7 @@ def draw_handler():
         # Info texts
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(
                 game["level"].lstrip("level").rstrip(".json"), 
-                math.degrees(game["angle"]), 
+                game["angle"], 
                 game["force"], 
                 game["ducks"]
                 ), 40, WIN_HEIGHT - 100, size=20)
@@ -624,10 +624,12 @@ def mouse_release_handler(x, y, button, modifiers):
     The function determines the angle and the force with which the duck will be launched and launches it.
     """
     if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
-        game["mouse_down"] = False
-        game["angle"] = calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y)
+        game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
         launch()
+    else:
+        initial_state()
+    game["mouse_down"] = False
 
 
 def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
@@ -640,7 +642,7 @@ def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
         game["x"] += dx
         game["y"] += dy
         game["x"], game["y"] = clamp_inside_circle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
-        game["angle"] = calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y)
+        game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
 
 
@@ -688,14 +690,14 @@ def keyboard_handler(symbol, modifiers):
 
         # TODO: Make sure when angle is 0, there is no minus.
         if symbol == key.RIGHT:
-            game["angle"] -= math.radians(5)
-            if game["angle"] < math.radians(-175):
+            game["angle"] -= 5
+            if game["angle"] < -175:
                 game["angle"] = game["angle"] * -1
             update_position()
         elif symbol == key.LEFT:
-            game["angle"] += math.radians(5)
-            if game["angle"] > math.radians(180):
-                game["angle"] = game["angle"] * -1 + math.radians(10)
+            game["angle"] += 5
+            if game["angle"] > 180:
+                game["angle"] = game["angle"] * -1 + 10
             update_position()
 
         if symbol == key.UP:
