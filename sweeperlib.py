@@ -25,6 +25,9 @@ statement checks whether the shift key is down:
 
 if modifiers & sweeperlib.MOD_SHIFT:
     # somethinghappens
+
+Note: This version has been edited by Tuomas Mattila and is therefore not the
+original version by Mika Oja. Edited parts have comments signed by Tuomas Mattila.
 """
 
 import pyglet

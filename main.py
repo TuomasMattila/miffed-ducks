@@ -611,18 +611,18 @@ def draw_handler():
         sweeperlib.draw_text("M: Menu", WIN_WIDTH - 670, 282)
         sweeperlib.draw_text("F: Toggle fullscreen on/off", WIN_WIDTH - 670, 210)
 
-    if game["level"] == "win":
+    elif game["level"] == "win":
         sweeperlib.draw_text("You win!", WIN_WIDTH/2 - 100, WIN_HEIGHT/2)
         sweeperlib.draw_text("M: Menu", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 - 72)
         sweeperlib.draw_text("Q: Quit", WIN_WIDTH/2 - 100, WIN_HEIGHT/2 - 144)
 
-    if game["level"] == "lose":
+    elif game["level"] == "lose":
         sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
         sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 - 72)
         sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 - 144)
         sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 - 216)
 
-    if game["level"].startswith("level"):
+    elif game["level"].startswith("level"):
         # Grid TODO: Delete later
         if game["grid"]:
             for x in range(0, WIN_WIDTH, 40):
