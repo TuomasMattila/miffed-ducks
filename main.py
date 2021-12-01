@@ -705,7 +705,6 @@ def keyboard_handler(symbol, modifiers):
                 initial_state()
                 load_level(game["level"])
 
-        # TODO: Make sure when angle is 0, there is no minus.
         if symbol == key.RIGHT:
             game["angle"] -= 5
             if game["angle"] < -175:
