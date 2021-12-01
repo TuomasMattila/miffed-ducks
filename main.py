@@ -59,14 +59,34 @@ animation = {
 
 def calculate_distance(x1, y1, x2, y2):
     """
-    Calculates the distance between two points and returns it.
+    Returns the distance between two points.
+
+    :Parameters:
+        `x1` : float
+            X-coordinate of the first point.
+        `y1` : float
+            Y-coordinate of the first point.
+        `x1` : float
+            X-coordinate of the second point.
+        `y1` : float
+            Y-coordinate of the second point.
     """
     return math.sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2))
 
 
 def calculate_angle(x1, y1, x2, y2):
     """
-    Returns the angle between two points, in radians.
+    Returns the radian angle between two points.
+
+    :Parameters:
+        `x1` : float
+            X-coordinate of the first point.
+        `y1` : float
+            Y-coordinate of the first point.
+        `x1` : float
+            X-coordinate of the second point.
+        `y1` : float
+            Y-coordinate of the second point.
     """
     x_distance = x2 - x1
     y_distance = y2 - y1
@@ -75,8 +95,13 @@ def calculate_angle(x1, y1, x2, y2):
 
 def convert_to_xy(angle, ray):
     """
-    Converts polar coordinates to cartesian coordinates.
-    Note that the angle given as a parameter must be a radian value.
+    Converts polar coordinates to cartesian coordinates and returns them.
+
+    :Parameters:
+        `angle` : float
+            The radian angle from the reference angle.
+        `ray` : float
+            The distance from the reference point.
     """
     x = ray * math.cos(angle)
     y = ray * math.sin(angle)
@@ -88,9 +113,19 @@ def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
     First the function finds out whether the given
     point is already inside the circle. If it is, its coordinates
     are simply returned as they are. However, if the point is outside
-    the circle, it is "pulled" to the circle's perimeter. In
-    doing so, the angle from the circle's center must be maintained
-    while the distance is set exactly to the circle's radius.
+    the circle, it is "pulled" to the circle's perimeter and then returned.
+
+    :Parameters:
+        `x` : float
+            X-coordinate of the point.
+        `y` : float
+            Y-coordinate of the point.
+        `circle_center_x` : float
+            X-coordinate of the circle's center.
+        `circle_center_x` : float'
+            Y-coordinate of the circle's center.
+        `radius` : float
+            Radius of the circle.
     """
     distance = calculate_distance(x, y, circle_center_x, circle_center_y)
     if distance > radius:
@@ -108,6 +143,13 @@ def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
 def order_by_height(box):
     """
     Used to sort the list of boxes according to their height measured from the top of the box.
+
+    :Parameters:
+        `box` : A `dict` with the following keys:
+                    x `float` : X-coordinate of the box.
+                    y `float` : Y-coordinate of the box.
+                    w `float` : Width of the box.
+                    h `float` : Height of the box.
     """
     return box["y"] + box["h"]
 
@@ -115,23 +157,26 @@ def order_by_height(box):
 def order_by_distance(collision):
     """
     Used to sort the list of colliding boxes according to their distance from the duck.
+
+    :Parameters:
+        `box` : A `dict` with the following keys:
+                    x `float` : X-coordinate of the box.
+                    y `float` : Y-coordinate of the box.
+                    w `float` : Width of the box.
+                    h `float` : Height of the box.
     """
     return calculate_distance(game["x"], game["y"], collision["x"], collision["y"])
 
 
 def update_position():
-    """
-    Updates the duck's position when using arrow keys to adjust angle and force.
-    """
+    """Updates the duck's position when using arrow keys to adjust angle and force."""
     x, y = convert_to_xy(math.radians(game["angle"]), game["force"])
     game["x"] = LAUNCH_X - x
     game["y"] = LAUNCH_Y - y
 
 
 def targets_remaining():
-    """
-    Checks if there are any targets left in the list of boxes.
-    """
+    """Checks if there are any targets left in the list of boxes."""
     for box in game["boxes"]:
         if box["type"] == "target":
             return True
@@ -139,9 +184,7 @@ def targets_remaining():
 
 
 def is_inside_area(min_x, max_x, min_y, max_y, object):
-    """
-    Checks whether the object is inside the area defined by the minimum and maximum x and y values.
-    """
+    """Checks whether the object is inside the area defined by the minimum and maximum x and y values."""
     if max_y < object["y"] or min_y > object["y"] + object["h"]:
         return False
     elif max_x < object["x"] or min_x > object["x"] + object["w"]:
@@ -167,7 +210,7 @@ def initial_state():
 def launch():
     """
     Launches a duck and calculates its starting velocity. Stores x- and y-velocity
-    components to the game dictionary.
+    components to the game dictionary. Removes one duck.
     """
     if not game["flight"]:
         game["x_velocity"] = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
@@ -187,8 +230,12 @@ def create_boxes(quantity):
     w: box width
     h: box height
     vy: falling velocity of the box
-    To make the random levels always possible to pass, the target boxes are
+    To make the random levels easier to pass, the target boxes are
     spawned higher than obstacles.
+
+    :Parameters:
+        `quantity` : int
+            The number of boxes to create. Preferably an even number.
     """
     boxlist = []
     for i in range(quantity):
@@ -221,9 +268,9 @@ def drop(boxes):
     Drops rectangular objects that are given as a list. Each object is to be
     defined as a dictionary with x and y coordinates, width, height, and falling
     velocity. Drops boxes for one time unit.
-    Parameters:
-    - boxes: A list of dictionaries that describe boxes.
-             The dictionaries must have x, y, w, h and vy values.
+    :Parameters:
+        `boxes` : A `list` of `dict`s that describe boxes.
+                  The dictionaries must have x, y, w, h and vy keys.
     """
     boxes.sort(key=order_by_height)
     try:
@@ -259,9 +306,10 @@ def drop(boxes):
 def drop_ducks(ducks):
     """
     Makes used ducks fall down and destroy targets.
-    Parameters:
-    - ducks: A list of dictionaries that describe ducks.
-             The dictionaries must have x, y, w, h and vy values.
+    
+    :Parameters:
+        `ducks` : A `list` of `dict`s that describe ducks.
+                  The dictionaries must have x, y, w, h and vy values.
     """
     for duck in ducks:
         destroy_targets(duck)
@@ -282,9 +330,10 @@ def drop_ducks(ducks):
 def destroy_targets(duck):
     """
     Destroys targets that are overlapping the duck.
-    Parameters:
-    - duck: A dictionary describing a duck.
-            Has to have x, y, w and h values.
+
+    :Parameters:
+        `duck` : A `dict` describing a duck.
+                 Has to have x, y, w and h values.
     """
     new_box_list = []
     for box in game["boxes"]:
@@ -377,14 +426,19 @@ def predict_collisions():
 def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     """
     Tests if the duck should bounce off the bounce_from -obstacle in the direction defined by velocity_axis.
-    Parameters:
-    - angle: The direction to which the duck is currently heading, in radians.
-    - ray: The distance from duck's current position to the assumed next position.
-    - bounce_from: A dictionary which describes a box and has x, y, w and h values.
-    - velocity_axis: Either "x_velocity" or "y_velocity".
-    Returns:
-    - True, if the duck bounces off the bounce_from -obstacle.
-    - False otherwise.
+
+    :Parameters:
+        `angle` : float 
+            The direction to which the duck is currently heading, in radians.
+        `ray` : float
+            The distance from duck's current position to the assumed next position.
+        `bounce_from` : A `dict` which describes a box.
+            Has x, y, w and h values.
+        `velocity_axis` : str
+            Either "x_velocity" or "y_velocity".
+    :Returns:
+    `True`, if the duck bounces off the bounce_from -obstacle.
+    `False` otherwise.
     """
     x_movement, y_movement = convert_to_xy(angle, ray)
     test_box = {"x": game["x"] + x_movement,
@@ -459,12 +513,15 @@ def check_overlaps():
 def check_adjacent_boxes(box, side):
     """
     Checks if there is an adjacent box on certain side of the box.
-    Parameters:
-        - box: a box dictionary, with x, y, w and h values.
-        - side: "left", "right" or "up".
-    Returns:
-        - True, if there is an adjacent box on the side specified by the side parameter.
-        - False otherwise.
+
+    :Parameters:
+        `box`: A `dict` describing a box.
+            Has x, y, w and h values.
+        `side` : str
+            "left", "right" or "up".
+    :Returns:
+        `True`, if there is an adjacent box on the side specified by the side parameter.
+        `False` otherwise.
     """
     for other in game["boxes"]:
         if side == "left":
@@ -488,14 +545,16 @@ def check_adjacent_boxes(box, side):
 def load_level(level):
     """
     Loads a level.
-    Parameters:
-    - level: String of characters defining the level to be loaded.
-             Possible values:
-             - "menu", when the player has pressed M to go to the menu.
-             - "levelX.json", where X is a normal level's number.
-             - "levelX", where X is a random level's number.
-             - "lose", when the player loses in random levels -mode.
-             - "win", when the player passes all normal levels.
+
+    :Parameters:
+        `level` : str
+            A String that tells the program which level to load.
+            Possible values:
+            "menu", when the player has pressed M to go to the menu.
+            "levelX.json", where X is a normal level's number.
+            "levelX", where X is a random level's number.
+            "lose", when the player loses in random levels -mode.
+            "win", when the player passes all normal levels.
     """
     game["used_ducks"].clear()
     # If the player wins the game
@@ -534,9 +593,7 @@ def load_level(level):
 
 
 def draw_handler():
-    """
-    This function draws everything in the game.
-    """
+    """This function draws everything in the game."""
     sweeperlib.clear_window()
     sweeperlib.draw_background()
     sweeperlib.begin_sprite_draw()
@@ -664,9 +721,7 @@ def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
 
 
 def keyboard_handler(symbol, modifiers):
-    """
-    This function handles keyboard input.
-    """
+    """This function handles keyboard input."""
     key = sweeperlib.pyglet.window.key
 
     if symbol == key.Q:
@@ -737,9 +792,7 @@ def keyboard_handler(symbol, modifiers):
 
 
 def update(elapsed):
-    """
-    This is called 60 times/second.
-    """
+    """This is called 60 times/second."""
     game["time"] += elapsed
     if game["level"].startswith("level"):
         drop(game["boxes"])
