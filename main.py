@@ -181,26 +181,35 @@ def create_boxes(quantity):
     """
     Creates a speficied number of boxes with random positions inside the specified
     area. Boxes are represented as dictionaries with the following keys:
+    type: either "target" or "obstacle"
     x: x coordinate of the bottom left corner
     y: y coordinate of the bottom left corner
     w: box width
     h: box height
     vy: falling velocity of the box
+    To make the random levels always possible to pass, the target boxes are
+    spawned higher than obstacles.
     """
     boxlist = []
     for i in range(quantity):
         if i < quantity / 2:
-            type = "target"
+            box = {
+                "type": "target",
+                "x": random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
+                "y": random.randint(340, 600),
+                "w": 40,
+                "h": 40,
+                "vy": 0
+            }
         else:
-            type = "obstacle"
-        box = {
-            'type': type,
-            'x': random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
-            'y': random.randint(80, WIN_HEIGHT/2),
-            'w': 40,
-            'h': 40,
-            'vy': 0
-        }
+            box = {
+                "type": "obstacle",
+                "x": random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
+                "y": random.randint(80, 300),
+                "w": 40,
+                "h": 40,
+                "vy": 0
+            }
         boxlist.append(box)
         boxlist.sort(key=order_by_height)
 
@@ -506,13 +515,17 @@ def load_level(level):
             print("Failed to load level.")
     # Random levels
     else:
+        level_number = ""
         for c in level:
             if c.isdigit():
-                level_number = int(c)
-                break
+                level_number += c
+        level_number = int(level_number)
         game["boxes"] = create_boxes(level_number * 2)
         game["level"] = level
-        game["ducks"] = len(game["boxes"])
+        if level_number <= 10:
+            game["ducks"] = len(game["boxes"])
+        else:
+            game["ducks"] = 20
         game["next_level"] = "level{}".format(level_number + 1)
         game["random_levels_passed"] = level_number - 1
 
@@ -631,7 +644,7 @@ def mouse_release_handler(x, y, button, modifiers):
         game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
         launch()
-    else:
+    elif not game["flight"] and game["level"].startswith("level") and game["force"] <= 5:
         initial_state()
     game["mouse_down"] = False
 

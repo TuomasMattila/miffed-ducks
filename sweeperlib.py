@@ -49,7 +49,7 @@ graphics = {
     "background": None,
     "bg_color": None,
     "first_batch": None, # Separate batch for the straps of the slingshot to keep them behind other sprites. -Tuomas Mattila
-    "lines": [], # List for the line sprites.
+    "lines": [], # List for the line sprites. -Tuomas Mattila
     "batch": None,
     "sprites": [],
     "images": {}
