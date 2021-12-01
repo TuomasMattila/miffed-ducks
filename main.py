@@ -6,7 +6,6 @@ import math
 import sweeperlib
 import json
 import random
-import pyglet
 
 
 WIN_WIDTH = 1920
@@ -20,9 +19,9 @@ DRAG_RADIUS = 100
 FORCE_FACTOR = 0.6
 ELASTICITY = 0.5
 
-box_breaking_sound = pyglet.media.load("box_breaking_sound.wav", streaming=False)
-duck_sound = pyglet.media.load("duck_sound.wav", streaming=False)
-bounce_sound = pyglet.media.load("bounce_sound.wav", streaming=False)
+box_breaking_sound = sweeperlib.pyglet.media.load("box_breaking_sound.wav", streaming=False)
+duck_sound = sweeperlib.pyglet.media.load("duck_sound.wav", streaming=False)
+bounce_sound = sweeperlib.pyglet.media.load("bounce_sound.wav", streaming=False)
 
 game = {
     "x": LAUNCH_X,
