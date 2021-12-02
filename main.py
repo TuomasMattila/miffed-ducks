@@ -2,10 +2,10 @@
 A Wee Bit Miffed Ducks: A game where you shoot ducks at objects.
 Elementary programming 2021 course project.
 """
-import math
-import sweeperlib
 import json
+import math
 import random
+import sweeperlib
 
 
 WIN_WIDTH = 1920
@@ -132,8 +132,7 @@ def clamp_inside_circle(x, y, circle_center_x, circle_center_y, radius):
         ray = distance - radius
         move_x, move_y = convert_to_xy(angle, ray)
         return x + move_x, y + move_y
-    else:
-        return x, y
+    return x, y
 
 
 ############################## Game related auxiliary functions ##############################
@@ -182,14 +181,31 @@ def targets_remaining():
     return False
 
 
-def is_inside_area(min_x, max_x, min_y, max_y, object):
-    """Checks whether the object is inside the area defined by the minimum and maximum x and y values."""
-    if max_y < object["y"] or min_y > object["y"] + object["h"]:
+def is_inside_area(min_x, max_x, min_y, max_y, box):
+    """
+    Checks whether the `box` is inside the area defined
+    by the minimum and maximum x and y values.
+
+    :Parameters:
+        `min_x` : float
+            Minimum x value of the area.
+        `max_x` : float
+            Maximum x value of the area.
+        `min_y` : float
+            Minimum y value of the area.
+        `max_y` : float
+            Maximum y value of the area.
+        `box` : A `dict` with the following keys:
+                    x `float` : X-coordinate of the box.
+                    y `float` : Y-coordinate of the box.
+                    w `float` : Width of the box.
+                    h `float` : Height of the box.
+    """
+    if max_y < box["y"] or min_y > box["y"] + box["h"]:
         return False
-    elif max_x < object["x"] or min_x > object["x"] + object["w"]:
+    if max_x < box["x"] or min_x > box["x"] + box["w"]:
         return False
-    else:
-        return True
+    return True
 
 
 def initial_state():
@@ -289,10 +305,11 @@ def drop(boxes):
                 continue
             if box["initial_height"] < other["initial_height"]:
                 continue
-            elif box["initial_height"] == other["initial_height"]:
+            if box["initial_height"] == other["initial_height"]:
                 box["initial_height"] += 1
             if is_inside_area(box["x"], box["x"] + box["w"], box["y"], box["y"] + box["h"], other):
-                if not box["x"] == other["x"] + other["w"] and not box["x"] + box["w"] == other["x"]:
+                if (not box["x"] == other["x"] + other["w"] and
+                    not box["x"] + box["w"] == other["x"]):
                     box["y"] = other["y"] + other["h"]
                     box["vy"] = 0
                     allow_falling = False
@@ -305,7 +322,7 @@ def drop(boxes):
 def drop_ducks(ducks):
     """
     Makes used ducks fall down and destroy targets.
-    
+
     :Parameters:
         `ducks` : A `list` of `dict`s that describe ducks.
                   The dictionaries must have x, y, w, h and vy values.
@@ -317,9 +334,13 @@ def drop_ducks(ducks):
             continue
         allow_falling = True
         for box in game["boxes"]:
-            if is_inside_area(duck["x"], duck["x"] + duck["w"], duck["y"], duck["y"] + duck["h"], box):
+            if is_inside_area(duck["x"],
+                              duck["x"] + duck["w"],
+                              duck["y"],
+                              duck["y"] + duck["h"],
+                              box):
                 duck["y"] = box["y"] + box["h"]
-                duck["vy"] == 0
+                duck["vy"] = 0
                 allow_falling = False
         if allow_falling:
             duck["vy"] -= GRAVITATIONAL_ACCEL
@@ -340,8 +361,7 @@ def destroy_targets(duck):
             if box["type"] == "target":
                 box_breaking_sound.play()
                 continue
-            else:
-                new_box_list.append(box)
+            new_box_list.append(box)
         else:
             new_box_list.append(box)
     game["boxes"] = new_box_list
@@ -358,22 +378,38 @@ def predict_collisions():
     # Duck's direction: down and right
     if game["y_velocity"] <= 0 and game["x_velocity"] >= 0:
         for box in game["boxes"]:
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
+            if is_inside_area(game["x"],
+                              game["x"] + game["x_velocity"] + game["w"],
+                              game["y"] + game["y_velocity"],
+                              game["y"] + game["h"],
+                              box):
                 collisions.append(box)
     # Duck's direction: down and left
     elif game["y_velocity"] <= 0 and game["x_velocity"] <= 0:
         for box in game["boxes"]:
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"] + game["y_velocity"], game["y"] + game["h"], box):
+            if is_inside_area(game["x"] + game["x_velocity"],
+                              game["x"] + game["w"],
+                              game["y"] + game["y_velocity"],
+                              game["y"] + game["h"],
+                              box):
                 collisions.append(box)
     # Duck's direction: up and right
     elif game["y_velocity"] >= 0 and game["x_velocity"] >= 0:
         for box in game["boxes"]:
-            if is_inside_area(game["x"], game["x"] + game["x_velocity"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
+            if is_inside_area(game["x"],
+                              game["x"] + game["x_velocity"] + game["w"],
+                              game["y"],
+                              game["y"] + game["y_velocity"] + game["h"],
+                              box):
                 collisions.append(box)
     # Duck's direction: up and left
     elif game["y_velocity"] >= 0 and game["x_velocity"] <= 0:
         for box in game["boxes"]:
-            if is_inside_area(game["x"] + game["x_velocity"], game["x"] + game["w"], game["y"], game["y"] + game["y_velocity"] + game["h"], box):
+            if is_inside_area(game["x"] + game["x_velocity"],
+                              game["x"] + game["w"],
+                              game["y"],
+                              game["y"] + game["y_velocity"] + game["h"],
+                              box):
                 collisions.append(box)
 
     if collisions:
@@ -385,49 +421,50 @@ def predict_collisions():
                 break
         collisions.clear()
         if not bounce_from:
-            return False
+            return
     else:
-        return False
+        return
 
-    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
+    angle = calculate_angle(game["x"],
+                            game["y"],
+                            game["x"] + game["x_velocity"],
+                            game["y"] + game["y_velocity"])
 
     # When bouncing left
     if game["x_velocity"] >= 0 and game["x"] + game["w"] <= bounce_from["x"]:
         try:
             ray = abs((bounce_from["x"] - game["w"] - game["x"]) / math.cos(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in predict_collisions: ray = abs((bounce_from['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - bounce_from["y"])
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
-            return True
+            return
 
     # When bouncing right
     elif game["x_velocity"] <= 0 and game["x"] >= bounce_from["x"] + bounce_from["w"]:
         try:
             ray = abs((game["x"] - bounce_from["x"] - bounce_from["w"]) / math.cos(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - bounce_from['x'] - bounce_from['w']) / math.cos(angle))")
-            ray = abs(game["y"] - bounce_from["y"])        
+            ray = abs(game["y"] - bounce_from["y"])
         if try_to_bounce(angle, ray, bounce_from, "x_velocity"):
-            return True
+            return
 
     # When bouncing up
     if game["y_velocity"] <= 0 and game["y"] >= bounce_from["y"] + bounce_from["h"]:
         try:
             ray = abs((game["y"] - bounce_from["y"] - bounce_from["h"]) / math.sin(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - bounce_from['y'] - bounce_from['h']) / math.sin(angle))")
             ray = abs(game["x"] - bounce_from["x"])
         if try_to_bounce(angle, ray, bounce_from, "y_velocity"):
-            return True
+            return
 
 
 def try_to_bounce(angle, ray, bounce_from, velocity_axis):
     """
-    Tests if the duck should bounce off the bounce_from -obstacle in the direction defined by velocity_axis.
+    Tests if the duck should bounce off the bounce_from -obstacle in
+    the direction defined by velocity_axis.
 
     :Parameters:
-        `angle` : float 
+        `angle` : float
             The direction to which the duck is currently heading, in radians.
         `ray` : float
             The distance from duck's current position to the assumed next position.
@@ -445,7 +482,11 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
                 "w": game["w"],
                 "h": game["h"]
                 }
-    if is_inside_area(test_box["x"], test_box["x"] + test_box["w"], test_box["y"], test_box["y"] + test_box["h"], bounce_from):
+    if is_inside_area(test_box["x"],
+                      test_box["x"] + test_box["w"],
+                      test_box["y"],
+                      test_box["y"] + test_box["h"],
+                      bounce_from):
         game["x"] = test_box["x"]
         game["y"] = test_box["y"]
         if velocity_axis == "x_velocity":
@@ -456,8 +497,7 @@ def try_to_bounce(angle, ray, bounce_from, velocity_axis):
         if abs(game["x_velocity"]) > 1 or abs(game["y_velocity"]) > 2:
             bounce_sound.play()
         return True
-    else:
-        return False
+    return False
 
 
 def check_overlaps():
@@ -474,39 +514,39 @@ def check_overlaps():
                 break
 
     if not overlapping_box:
-        return False
+        return
 
-    angle = calculate_angle(game["x"], game["y"], game["x"] + game["x_velocity"], game["y"] + game["y_velocity"])
+    angle = calculate_angle(game["x"],
+                            game["y"],
+                            game["x"] + game["x_velocity"],
+                            game["y"] + game["y_velocity"])
 
     # When bouncing left
     if game["x_velocity"] >= 0 and not check_adjacent_boxes(overlapping_box, "left"):
         try:
             ray = abs((overlapping_box["x"] - game["w"] - game["x"]) / math.cos(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in check_overlaps: ray = abs((overlapping_box['x'] - game['w'] - game['x']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
-            return True
+            return
 
     # When bouncing right
     elif game["x_velocity"] <= 0 and not check_adjacent_boxes(overlapping_box, "right"):
         try:
             ray = abs((game["x"] - overlapping_box["x"] - overlapping_box["w"]) / math.cos(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['x'] - overlapping_box['x'] - overlapping_box['w']) / math.cos(angle))")
             ray = abs(game["y"] - overlapping_box["y"])
         if try_to_bounce(angle, ray, overlapping_box, "x_velocity"):
-            return True
+            return
 
     # When bouncing up
     if game["y_velocity"] <= 0 and not check_adjacent_boxes(overlapping_box, "up"):
         try:
             ray = abs((game["y"] - overlapping_box["y"] - overlapping_box["h"]) / math.sin(angle))
         except ZeroDivisionError:
-            print("Error: Tried to divide by zero in check_overlaps: ray = abs((game['y'] - overlapping_box['y'] - overlapping_box['h']) / math.sin(angle))")
             ray = abs(game["x"] - overlapping_box["x"])
         if try_to_bounce(angle, ray, overlapping_box, "y_velocity"):
-            return True
+            return
 
 
 def check_adjacent_boxes(box, side):
@@ -618,7 +658,9 @@ def draw_handler():
 
     elif game["level"] == "lose":
         sweeperlib.draw_text("You lose!", 40, WIN_HEIGHT/2)
-        sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]), 40, WIN_HEIGHT/2 - 72)
+        sweeperlib.draw_text("Levels passed: {}".format(game["random_levels_passed"]),
+                             40,
+                             WIN_HEIGHT/2 - 72)
         sweeperlib.draw_text("M: Menu", 40, WIN_HEIGHT/2 - 144)
         sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 - 216)
 
@@ -644,12 +686,32 @@ def draw_handler():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
-            sweeperlib.prepare_line(LAUNCH_X - 16, LAUNCH_Y + 43, LAUNCH_X + 20, LAUNCH_Y + 40, 5, (125, 125, 125))
-            sweeperlib.prepare_line(LAUNCH_X + 55, LAUNCH_Y + 43, LAUNCH_X + 20, LAUNCH_Y + 40, 5, (125, 125, 125))
-            sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])          
+            sweeperlib.prepare_line(LAUNCH_X - 16,
+                                    LAUNCH_Y + 43,
+                                    LAUNCH_X + 20,
+                                    LAUNCH_Y + 40,
+                                    5,
+                                    (125, 125, 125))
+            sweeperlib.prepare_line(LAUNCH_X + 55,
+                                    LAUNCH_Y + 43,
+                                    LAUNCH_X + 20,
+                                    LAUNCH_Y + 40,
+                                    5,
+                                    (125, 125, 125))
+            sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
-            sweeperlib.prepare_line(LAUNCH_X - 16, LAUNCH_Y + 43, game["x"] + 20, game["y"] + 10, 5, (125, 125, 125))
-            sweeperlib.prepare_line(LAUNCH_X + 55, LAUNCH_Y + 43, game["x"] + 20, game["y"] + 10, 5, (125, 125, 125))
+            sweeperlib.prepare_line(LAUNCH_X - 16,
+                                    LAUNCH_Y + 43,
+                                    game["x"] + 20,
+                                    game["y"] + 10,
+                                    5,
+                                    (125, 125, 125))
+            sweeperlib.prepare_line(LAUNCH_X + 55,
+                                    LAUNCH_Y + 43,
+                                    game["x"] + 20,
+                                    game["y"] + 10,
+                                    5,
+                                    (125, 125, 125))
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
             # Aiming points
             if game["mouse_down"] or game["force"] > 0:
@@ -658,7 +720,11 @@ def draw_handler():
                 point_xv = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
                 point_yv = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
                 for i in range(20):
-                    sweeperlib.draw_text("o", point_x + 20, point_y + 20, color=(255, 255, 255, 255), size=10)
+                    sweeperlib.draw_text("o",
+                                         point_x + 20,
+                                         point_y + 20,
+                                         color=(255, 255, 255, 255),
+                                         size=10)
                     point_x += point_xv
                     point_y += point_yv
                     point_yv -= GRAVITATIONAL_ACCEL
@@ -683,9 +749,9 @@ def draw_handler():
 
         # Info texts
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(
-                game["level"].lstrip("level").rstrip(".json"), 
-                game["angle"], 
-                game["force"], 
+                game["level"].lstrip("level").rstrip(".json"),
+                game["angle"],
+                game["force"],
                 game["ducks"]
                 ), 40, WIN_HEIGHT - 100, size=20)
     sweeperlib.draw_sprites()
@@ -694,7 +760,8 @@ def draw_handler():
 def mouse_release_handler(x, y, button, modifiers):
     """
     This function is called when a mouse button is released.
-    The function determines the angle and the force with which the duck will be launched and launches it.
+    The function determines the angle and the force with which
+    the duck will be launched and launches it.
     """
     if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
         game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
@@ -714,7 +781,11 @@ def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
         game["mouse_down"] = True
         game["x"] += dx
         game["y"] += dy
-        game["x"], game["y"] = clamp_inside_circle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y, DRAG_RADIUS)
+        game["x"], game["y"] = clamp_inside_circle(game["x"],
+                                                   game["y"],
+                                                   LAUNCH_X,
+                                                   LAUNCH_Y,
+                                                   DRAG_RADIUS)
         game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
 
