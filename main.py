@@ -34,7 +34,6 @@ game = {
     "y_velocity": 0,
     "flight": False,
     "mouse_down": False,
-    "level_data": None,
     "level": "menu",
     "boxes": [],
     "ducks": 5,
@@ -604,7 +603,6 @@ def load_level(level):
         try:
             with open(level) as file:
                 data = json.load(file)
-                game["level_data"] = data.copy()
                 game["level"] = level
                 game["boxes"] = data["boxes"].copy()
                 game["ducks"] = data["ducks"]
@@ -824,7 +822,7 @@ def keyboard_handler(symbol, modifiers):
             load_level("level1")
 
     # Game keys
-    if game["level"].startswith("level"):
+    if game["level"].startswith("level") and game["flight"] == False:
         if game["level"].endswith(".json") or game["level"].endswith("1"):
             if symbol == key.R:
                 initial_state()
