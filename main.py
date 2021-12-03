@@ -1,6 +1,43 @@
 """
 A Wee Bit Miffed Ducks: A game where you shoot ducks at objects.
 Elementary programming 2021 course project.
+
+Author: Tuomas Mattila
+
+Uses sweeperlib (author: Mika Oja, University of Oulu).
+
+The game includes two game modes: normal levels and randomly generated
+levels. In both game modes, the goal is to destroy the wooden boxes.
+
+Normal levels:
+- 2 levels.
+- Pre-defined amount of ducks.
+- Player may reset a level anytime.
+- Player wins after passing both levels.
+Randomized levels:
+- Unlimited amount of levels.
+- The first level has two boxes: one target and one obstacle.
+- After passing a level, the amount of boxes increases by two.
+- Half of the boxers are targets, other half obstacles.
+- Player has the same amount of ducks as there are boxes, however, the
+  maximum number of ducks is limited to 20.
+- Only the first level can be reset.
+- If the player fails to destroy all of the targets in a level the game
+  is over and the amount of passed levels is displayed.
+
+Controls:
+    General:
+        F: Toggle fullscreen on/off
+        Q: Quit the game
+        M: Menu
+    In menu:
+        P: Play levels
+        R: Play random levels
+    In game:
+        R: Restart level (only normal levels and the first random level)
+        ←/→ or mouse drag: Set angle
+        ↑/↓ or mouse drag: Set Force
+        Space or mouse release: Launch
 """
 import json
 import math
@@ -43,7 +80,6 @@ game = {
     "random_levels_passed": 0,
     "used_ducks": [],
     "fullscreen": True,
-    "grid": False,  # TODO: Delete later
     "slow_duck": 0
 }
 
@@ -630,8 +666,8 @@ def load_level(level):
 def initialize_extras():
     """
     This function adds some things to the game that were not possible to add
-    directly using the sweeperlib or are otherwise better to add this way. 
-    This includes some extra sprites, custom background, lines and fullscreen.
+    directly using the sweeperlib or are otherwise better to add this way.
+    This includes some extra sprites, custom background, lines as straps and fullscreen.
     """
     sweeperlib.graphics["images"]["duck2"] = sweeperlib.pyglet.resource.image("duck2.png")
     sweeperlib.graphics["images"]["target"] = sweeperlib.pyglet.resource.image("target.png")
@@ -680,7 +716,7 @@ def draw_handler():
     sweeperlib.clear_window()
     sweeperlib.draw_background()
     sweeperlib.begin_sprite_draw()
-    # An extra batch for the lines
+    # An extra batch for the lines (straps)
     sweeperlib.graphics["first_batch"] = sweeperlib.pyglet.graphics.Batch()
 
     if game["level"] == "menu":
@@ -689,6 +725,7 @@ def draw_handler():
         sweeperlib.draw_text("Play levels: P", 40, 354)
         sweeperlib.draw_text("Play random levels: R", 40, 282)
         sweeperlib.draw_text("Quit: Q", 40, 210)
+        sweeperlib.draw_text("Goal: Destroy the wooden boxes", WIN_WIDTH - 670, 714)
         sweeperlib.draw_text("Controls:", WIN_WIDTH - 670, 642)
         sweeperlib.draw_text("R: Restart level", WIN_WIDTH - 670, 570)
         sweeperlib.draw_text("←/→ or mouse drag: Set angle", WIN_WIDTH - 670, 498)
@@ -711,19 +748,6 @@ def draw_handler():
         sweeperlib.draw_text("Q: Quit", 40, WIN_HEIGHT/2 - 216)
 
     elif game["level"].startswith("level"):
-        # Grid TODO: Delete later
-        if game["grid"]:
-            for x in range(0, WIN_WIDTH, 40):
-                for y in range(0, WIN_HEIGHT, 40):
-                    if x == 0 and y > 0:
-                        sweeperlib.draw_text(".", x, y, size=20)
-                        sweeperlib.draw_text(str(y), x+5, y, size=10)
-                    elif x > 0 and y == 0:
-                        sweeperlib.draw_text(".", x, y, size=20)
-                        sweeperlib.draw_text(str(x), x+5, y, size=10)
-                    else:
-                        sweeperlib.draw_text(".", x, y, size=20)
-
         if game["flight"]:
             # Duck animation
             if game["time"] >= animation["animation_time"] + 0.1:
@@ -732,6 +756,7 @@ def draw_handler():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
+            # Straps
             prepare_line(LAUNCH_X - 16,
                          LAUNCH_Y + 43,
                          LAUNCH_X + 20,
@@ -746,6 +771,7 @@ def draw_handler():
                          STRAP_COLOR)
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
+            # Straps
             prepare_line(LAUNCH_X - 16,
                          LAUNCH_Y + 43,
                          game["x"] + 20,
@@ -793,7 +819,7 @@ def draw_handler():
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
 
-        # Lines
+        # Straps
         sweeperlib.graphics["first_batch"].draw()
         sweeperlib.graphics["lines"].clear()
 
@@ -852,13 +878,6 @@ def keyboard_handler(symbol, modifiers):
         initial_state()
         game["level"] = "menu"
 
-    # TODO: Delete later
-    if symbol == key.G:
-        if game["grid"]:
-            game["grid"] = False
-        else:
-            game["grid"] = True
-
     if symbol == key.F:
         if game["fullscreen"]:
             sweeperlib.graphics["window"].set_fullscreen(fullscreen=False)
@@ -907,11 +926,6 @@ def keyboard_handler(symbol, modifiers):
 
         if symbol == key.SPACE:
             launch()
-
-        # TODO: Delete later
-        if symbol == key.N:
-            initial_state()
-            load_level(game["next_level"])
 
 
 def update(elapsed):
