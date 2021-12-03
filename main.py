@@ -14,6 +14,7 @@ Normal levels:
 - Pre-defined amount of ducks.
 - Player may reset a level anytime.
 - Player wins after passing both levels.
+
 Randomized levels:
 - Unlimited amount of levels.
 - The first level has two boxes: one target and one obstacle.
