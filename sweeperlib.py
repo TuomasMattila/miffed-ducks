@@ -25,13 +25,9 @@ statement checks whether the shift key is down:
 
 if modifiers & sweeperlib.MOD_SHIFT:
     # somethinghappens
-
-Note: This version has been edited by Tuomas Mattila and is therefore not the
-original version by Mika Oja. Edited parts have comments signed by Tuomas Mattila.
 """
 
 import pyglet
-from pyglet import shapes
 from pyglet.gl import glEnable, GL_TEXTURE_2D
 
 MOUSE_LEFT = pyglet.window.mouse.LEFT
@@ -51,8 +47,6 @@ graphics = {
     "window": None,
     "background": None,
     "bg_color": None,
-    "first_batch": None, # Separate batch for the straps of the slingshot to keep them behind other sprites. -Tuomas Mattila
-    "lines": [], # List for the line sprites. -Tuomas Mattila
     "batch": None,
     "sprites": [],
     "images": {}
@@ -109,9 +103,6 @@ def load_duck(path):
     sling = pyglet.resource.image("sling.png")
     graphics["images"]["duck"] = duck
     graphics["images"]["sling"] = sling
-    graphics["images"]["duck2"] = pyglet.resource.image("duck2.png") # Added an extra duck sprite for animation -Tuomas Mattila
-    graphics["images"]["target"] = pyglet.resource.image("target.png") # Added a custom target sprite -Tuomas Mattila
-    graphics["images"]["obstacle"] = pyglet.resource.image("obstacle.png") # Added a custom obstacle sprite -Tuomas Mattila
 
 def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
     """
@@ -126,12 +117,11 @@ def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
                            (0-255, RGBA)
     """
 
-    graphics["window"] = pyglet.window.Window(width, height, resizable=True, fullscreen=True)
+    graphics["window"] = pyglet.window.Window(width, height, resizable=True)
     graphics["bg_color"] = bg_color
-    graphics["background"] = pyglet.sprite.Sprite(pyglet.resource.image("background.png")) # Added a custom background -Tuomas Mattila
-    #graphics["background"] = pyglet.sprite.Sprite(
-    #    pyglet.image.SolidColorImagePattern(bg_color).create_image(width, height)
-    #)
+    graphics["background"] = pyglet.sprite.Sprite(
+        pyglet.image.SolidColorImagePattern(bg_color).create_image(width, height)
+    )
 
 def resize_window(width, height):
     """
@@ -388,7 +378,6 @@ def begin_sprite_draw():
     """
 
     graphics["batch"] = pyglet.graphics.Batch()
-    graphics["first_batch"] = pyglet.graphics.Batch()
 
 def prepare_sprite(key, x, y):
     """
@@ -419,34 +408,8 @@ def draw_sprites():
     when you have prepared all sprites to be drawn.
     """
 
-    graphics["first_batch"].draw() # First batch contains the lines, which have to be drawn first. -Tuomas Mattila
     graphics["batch"].draw()
-    graphics["lines"].clear() # -Tuomas Mattila
     graphics["sprites"].clear()
-
-# This function was added by Tuomas Mattila
-def prepare_line(x1, y1, x2, y2, width=1, color=(255, 255, 255)):
-    """
-    Adds a line shape sprite to the first batch.
-    Lines have to be in the first batch for them to
-    render behind other sprites.
-
-    :Parameters:
-    `x1` : float
-        The first X coordinate of the line.
-    `y1` : float
-        The first Y coordinate of the line.
-    `x2` : float
-        The second X coordinate of the line.
-    `y2` : float
-        The second Y coordinate of the line.
-    `width` : float
-        The desired width of the line.
-    `color` : (int, int, int)
-        The RGB color of the line, specified as a tuple of three ints in the range of 0-255.
-    """
-    graphics["lines"].append(shapes.Line(x1, y1, x2, y2, width=width, color=color, batch=graphics["first_batch"]))
-    
 
 if __name__ == "__main__":
     # Disabling two pylint warnings because it would complain about the test

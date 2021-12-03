@@ -11,13 +11,14 @@ import sweeperlib
 WIN_WIDTH = 1920
 WIN_HEIGHT = 1080
 GROUND_LEVEL = 80
-BG_COLOR = (200, 255, 255, 255)
-GRAVITATIONAL_ACCEL = 1.5
 LAUNCH_X = 100
 LAUNCH_Y = 100 + GROUND_LEVEL
 DRAG_RADIUS = 100
+GRAVITATIONAL_ACCEL = 1.5
 FORCE_FACTOR = 0.6
 ELASTICITY = 0.5
+STRAP_COLOR = (125, 125, 125)
+STRAP_WIDTH = 5
 
 box_breaking_sound = sweeperlib.pyglet.media.load("box_breaking_sound.wav", streaming=False)
 duck_sound = sweeperlib.pyglet.media.load("duck_sound.wav", streaming=False)
@@ -626,6 +627,51 @@ def load_level(level):
         game["random_levels_passed"] = level_number - 1
 
 
+def initialize_extras():
+    """
+    This function adds some things to the game that were not possible to add
+    directly using the sweeperlib or are otherwise better to add this way. 
+    This includes some extra sprites, custom background, lines and fullscreen.
+    """
+    sweeperlib.graphics["images"]["duck2"] = sweeperlib.pyglet.resource.image("duck2.png")
+    sweeperlib.graphics["images"]["target"] = sweeperlib.pyglet.resource.image("target.png")
+    sweeperlib.graphics["images"]["obstacle"] = sweeperlib.pyglet.resource.image("obstacle.png")
+    sweeperlib.graphics["background"] = sweeperlib.pyglet.sprite.Sprite(
+                                            sweeperlib.pyglet.resource.image("background.png"))
+    sweeperlib.graphics["lines"] = []
+    sweeperlib.graphics["window"].set_fullscreen(fullscreen=True)
+
+
+def prepare_line(x1, y1, x2, y2, width=1, color=(255, 255, 255)):
+    """
+    Adds a line shape sprite to the first batch.
+    Lines have to be in the first batch for them to
+    render behind other sprites.
+
+    :Parameters:
+    `x1` : float
+        The first X coordinate of the line.
+    `y1` : float
+        The first Y coordinate of the line.
+    `x2` : float
+        The second X coordinate of the line.
+    `y2` : float
+        The second Y coordinate of the line.
+    `width` : float
+        The desired width of the line.
+    `color` : (int, int, int)
+        The RGB color of the line, specified as a tuple of three ints in the range of 0-255.
+    """
+    sweeperlib.graphics["lines"].append(
+        sweeperlib.pyglet.shapes.Line(x1,
+                                      y1,
+                                      x2,
+                                      y2,
+                                      width=width,
+                                      color=color,
+                                      batch=sweeperlib.graphics["first_batch"]))
+
+
 ############################## Handler functions ##############################
 
 
@@ -634,6 +680,8 @@ def draw_handler():
     sweeperlib.clear_window()
     sweeperlib.draw_background()
     sweeperlib.begin_sprite_draw()
+    # An extra batch for the lines
+    sweeperlib.graphics["first_batch"] = sweeperlib.pyglet.graphics.Batch()
 
     if game["level"] == "menu":
         sweeperlib.draw_text("A Wee Bit Miffed Ducks", 40, WIN_HEIGHT - 150, size=40)
@@ -684,32 +732,32 @@ def draw_handler():
                     animation["frame"] = "duck2"
                 elif animation["frame"] == "duck2":
                     animation["frame"] = "duck"
-            sweeperlib.prepare_line(LAUNCH_X - 16,
-                                    LAUNCH_Y + 43,
-                                    LAUNCH_X + 20,
-                                    LAUNCH_Y + 40,
-                                    5,
-                                    (125, 125, 125))
-            sweeperlib.prepare_line(LAUNCH_X + 55,
-                                    LAUNCH_Y + 43,
-                                    LAUNCH_X + 20,
-                                    LAUNCH_Y + 40,
-                                    5,
-                                    (125, 125, 125))
+            prepare_line(LAUNCH_X - 16,
+                         LAUNCH_Y + 43,
+                         LAUNCH_X + 20,
+                         LAUNCH_Y + 40,
+                         STRAP_WIDTH,
+                         STRAP_COLOR)
+            prepare_line(LAUNCH_X + 55,
+                         LAUNCH_Y + 43,
+                         LAUNCH_X + 20,
+                         LAUNCH_Y + 40,
+                         STRAP_WIDTH,
+                         STRAP_COLOR)
             sweeperlib.prepare_sprite(animation["frame"], game["x"], game["y"])
         else:
-            sweeperlib.prepare_line(LAUNCH_X - 16,
-                                    LAUNCH_Y + 43,
-                                    game["x"] + 20,
-                                    game["y"] + 10,
-                                    5,
-                                    (125, 125, 125))
-            sweeperlib.prepare_line(LAUNCH_X + 55,
-                                    LAUNCH_Y + 43,
-                                    game["x"] + 20,
-                                    game["y"] + 10,
-                                    5,
-                                    (125, 125, 125))
+            prepare_line(LAUNCH_X - 16,
+                         LAUNCH_Y + 43,
+                         game["x"] + 20,
+                         game["y"] + 10,
+                         STRAP_WIDTH,
+                         STRAP_COLOR)
+            prepare_line(LAUNCH_X + 55,
+                         LAUNCH_Y + 43,
+                         game["x"] + 20,
+                         game["y"] + 10,
+                         STRAP_WIDTH,
+                         STRAP_COLOR)
             sweeperlib.prepare_sprite("duck", game["x"], game["y"])
             # Aiming points
             if game["mouse_down"] or game["force"] > 0:
@@ -745,6 +793,10 @@ def draw_handler():
         for duck in game["used_ducks"]:
             sweeperlib.prepare_sprite("duck", duck["x"], duck["y"])
 
+        # Lines
+        sweeperlib.graphics["first_batch"].draw()
+        sweeperlib.graphics["lines"].clear()
+
         # Info texts
         sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(
                 game["level"].lstrip("level").rstrip(".json"),
@@ -752,6 +804,7 @@ def draw_handler():
                 game["force"],
                 game["ducks"]
                 ), 40, WIN_HEIGHT - 100, size=20)
+
     sweeperlib.draw_sprites()
 
 
@@ -822,7 +875,7 @@ def keyboard_handler(symbol, modifiers):
             load_level("level1")
 
     # Game keys
-    if game["level"].startswith("level") and game["flight"] == False:
+    if game["level"].startswith("level") and not game["flight"]:
         if game["level"].endswith(".json") or game["level"].endswith("1"):
             if symbol == key.R:
                 initial_state()
@@ -842,12 +895,14 @@ def keyboard_handler(symbol, modifiers):
         if symbol == key.UP:
             if game["force"] < 100:
                 game["force"] += 5
+            elif game["force"] == 100:
+                game["force"] = 0
             update_position()
         elif symbol == key.DOWN:
             if game["force"] >= 5:
                 game["force"] -= 5
-            else:
-                game["force"] = 0
+            elif game["force"] == 0:
+                game["force"] = 100
             update_position()
 
         if symbol == key.SPACE:
@@ -897,10 +952,11 @@ def update(elapsed):
 
 if __name__ == "__main__":
     sweeperlib.load_duck("sprites")
-    sweeperlib.create_window(width=WIN_WIDTH, height=WIN_HEIGHT, bg_color=BG_COLOR)
+    sweeperlib.create_window(width=WIN_WIDTH, height=WIN_HEIGHT)
     sweeperlib.set_draw_handler(draw_handler)
     sweeperlib.set_release_handler(mouse_release_handler)
     sweeperlib.set_drag_handler(drag_handler)
     sweeperlib.set_keyboard_handler(keyboard_handler)
     sweeperlib.set_interval_handler(update, interval=1/60)
+    initialize_extras()
     sweeperlib.start()
