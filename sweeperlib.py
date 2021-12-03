@@ -108,10 +108,10 @@ def load_duck(path):
     duck = pyglet.resource.image("duck.png")
     sling = pyglet.resource.image("sling.png")
     graphics["images"]["duck"] = duck
+    graphics["images"]["sling"] = sling
     graphics["images"]["duck2"] = pyglet.resource.image("duck2.png") # Added an extra duck sprite for animation -Tuomas Mattila
     graphics["images"]["target"] = pyglet.resource.image("target.png") # Added a custom target sprite -Tuomas Mattila
     graphics["images"]["obstacle"] = pyglet.resource.image("obstacle.png") # Added a custom obstacle sprite -Tuomas Mattila
-    graphics["images"]["sling"] = sling
 
 def create_window(width=800, height=600, bg_color=(240, 240, 240, 255)):
     """
@@ -419,9 +419,9 @@ def draw_sprites():
     when you have prepared all sprites to be drawn.
     """
 
-    graphics["first_batch"].draw()
+    graphics["first_batch"].draw() # First batch contains the lines, which have to be drawn first. -Tuomas Mattila
     graphics["batch"].draw()
-    graphics["lines"].clear()
+    graphics["lines"].clear() # -Tuomas Mattila
     graphics["sprites"].clear()
 
 # This function was added by Tuomas Mattila
