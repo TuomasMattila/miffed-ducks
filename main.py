@@ -271,7 +271,7 @@ def launch():
         game["ducks"] -= 1
         duck_sound.play()
 
-  
+
 def create_boxes(quantity):
     """
     Creates a speficied number of boxes with random positions inside the specified
