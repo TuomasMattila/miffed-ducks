@@ -21,7 +21,7 @@ Randomized levels:
 - After passing a level, the amount of boxes increases by two.
 - Half of the boxers are targets, other half obstacles.
 - Player has the same amount of ducks as there are boxes, however, the
-  maximum number of ducks is limited to 20.
+  maximum number of ducks is limited to 16.
 - Only the first level can be reset.
 - If the player fails to destroy all of the targets in a level the game
   is over and the amount of passed levels is displayed.
@@ -75,7 +75,7 @@ game = {
     "mouse_down": False,
     "level": "menu",
     "boxes": [],
-    "ducks": 5,
+    "ducks": 0,
     "next_level": None,
     "time": 0.0,
     "random_levels_passed": 0,
@@ -271,7 +271,7 @@ def launch():
         game["ducks"] -= 1
         duck_sound.play()
 
-
+  
 def create_boxes(quantity):
     """
     Creates a speficied number of boxes with random positions inside the specified
@@ -294,7 +294,7 @@ def create_boxes(quantity):
         if i < quantity / 2:
             box = {
                 "type": "target",
-                "x": random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
+                "x": random.randint(WIN_WIDTH - 880, WIN_WIDTH - 60),
                 "y": random.randint(340, 600),
                 "w": 40,
                 "h": 40,
@@ -303,7 +303,7 @@ def create_boxes(quantity):
         else:
             box = {
                 "type": "obstacle",
-                "x": random.randint(WIN_WIDTH - 600, WIN_WIDTH - 60),
+                "x": random.randint(WIN_WIDTH - 880, WIN_WIDTH - 60),
                 "y": random.randint(80, 300),
                 "w": 40,
                 "h": 40,
@@ -315,7 +315,7 @@ def create_boxes(quantity):
     return boxlist
 
 
-def drop(boxes):
+def drop_boxes(boxes):
     """
     Drops rectangular objects that are given as a list. Each object is to be
     defined as a dictionary with x and y coordinates, width, height, and falling
@@ -451,7 +451,7 @@ def predict_collisions():
 
     if collisions:
         collisions.sort(key=order_by_distance)
-        # Find the closest box and delete target boxes
+        # Find the closest box
         for collision in collisions:
             if collision["type"] == "obstacle":
                 bounce_from = collision
@@ -626,10 +626,8 @@ def load_level(level):
         `level` : str
             A String that tells the program which level to load.
             Possible values:
-            "menu", when the player has pressed M to go to the menu.
             "levelX.json", where X is a normal level's number.
             "levelX", where X is a random level's number.
-            "lose", when the player loses in random levels -mode.
             "win", when the player passes all normal levels.
     """
     game["used_ducks"].clear()
@@ -656,10 +654,10 @@ def load_level(level):
         level_number = int(level_number)
         game["boxes"] = create_boxes(level_number * 2)
         game["level"] = level
-        if level_number <= 10:
+        if level_number <= 8:
             game["ducks"] = len(game["boxes"])
         else:
-            game["ducks"] = 20
+            game["ducks"] = 16
         game["next_level"] = "level{}".format(level_number + 1)
         game["random_levels_passed"] = level_number - 1
 
@@ -792,7 +790,7 @@ def draw_handler():
                 point_y = game["y"]
                 point_xv = game["force"] * FORCE_FACTOR * math.cos(math.radians(game["angle"]))
                 point_yv = game["force"] * FORCE_FACTOR * math.sin(math.radians(game["angle"]))
-                for i in range(20):
+                for i in range(15):
                     sweeperlib.draw_text("o",
                                          point_x + 20,
                                          point_y + 20,
@@ -825,7 +823,7 @@ def draw_handler():
         sweeperlib.graphics["lines"].clear()
 
         # Info texts
-        sweeperlib.draw_text("Level: {} Angle: {:.0f}° Force: {:.0f} Ducks: {}".format(
+        sweeperlib.draw_text("Level: {} Angle: {:.1f}° Force: {:.0f} Ducks: {}".format(
                 game["level"].lstrip("level").rstrip(".json"),
                 game["angle"],
                 game["force"],
@@ -833,21 +831,6 @@ def draw_handler():
                 ), 40, WIN_HEIGHT - 100, size=20)
 
     sweeperlib.draw_sprites()
-
-
-def mouse_release_handler(x, y, button, modifiers):
-    """
-    This function is called when a mouse button is released.
-    The function determines the angle and the force with which
-    the duck will be launched and launches it.
-    """
-    if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
-        game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
-        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
-        launch()
-    elif not game["flight"] and game["level"].startswith("level") and game["force"] <= 5:
-        initial_state()
-    game["mouse_down"] = False
 
 
 def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
@@ -866,6 +849,21 @@ def drag_handler(mouse_x, mouse_y, dx, dy, mouse_button, modifier_keys):
                                                    DRAG_RADIUS)
         game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
         game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
+
+
+def mouse_release_handler(x, y, button, modifiers):
+    """
+    This function is called when a mouse button is released.
+    The function determines the angle and the force with which
+    the duck will be launched and launches it.
+    """
+    if not game["flight"] and game["level"].startswith("level") and game["force"] >= 5:
+        game["angle"] = math.degrees(calculate_angle(game["x"], game["y"], LAUNCH_X, LAUNCH_Y))
+        game["force"] = math.sqrt(pow(game["x"] - LAUNCH_X, 2) + pow(game["y"] - LAUNCH_Y, 2))
+        launch()
+    elif not game["flight"] and game["level"].startswith("level") and game["force"] <= 5:
+        initial_state()
+    game["mouse_down"] = False
 
 
 def keyboard_handler(symbol, modifiers):
@@ -933,7 +931,7 @@ def update(elapsed):
     """This is called 60 times/second."""
     game["time"] += elapsed
     if game["level"].startswith("level"):
-        drop(game["boxes"])
+        drop_boxes(game["boxes"])
         drop_ducks(game["used_ducks"])
         if game["flight"]:
             destroy_targets(game)
@@ -969,8 +967,8 @@ if __name__ == "__main__":
     sweeperlib.load_duck("sprites")
     sweeperlib.create_window(width=WIN_WIDTH, height=WIN_HEIGHT)
     sweeperlib.set_draw_handler(draw_handler)
-    sweeperlib.set_release_handler(mouse_release_handler)
     sweeperlib.set_drag_handler(drag_handler)
+    sweeperlib.set_release_handler(mouse_release_handler)
     sweeperlib.set_keyboard_handler(keyboard_handler)
     sweeperlib.set_interval_handler(update, interval=1/60)
     initialize_extras()

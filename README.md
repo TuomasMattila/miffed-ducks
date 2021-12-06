@@ -25,7 +25,7 @@ levels. In both game modes, the goal is to destroy the wooden boxes.
 - After passing a level, the amount of boxes increases by two.
 - Half of the boxers are targets, other half obstacles.
 - Player has the same amount of ducks as there are boxes, however, the
-  maximum number of ducks is limited to 20.
+  maximum number of ducks is limited to 16.
 - Only the first level can be reset.
 - If the player fails to destroy all of the targets in a level the game
   is over and the amount of passed levels is displayed.
