@@ -58,9 +58,9 @@ ELASTICITY = 0.5
 STRAP_COLOR = (125, 125, 125)
 STRAP_WIDTH = 5
 
-box_breaking_sound = sweeperlib.pyglet.media.load("box_breaking_sound.wav", streaming=False)
-duck_sound = sweeperlib.pyglet.media.load("duck_sound.wav", streaming=False)
-bounce_sound = sweeperlib.pyglet.media.load("bounce_sound.wav", streaming=False)
+box_breaking_sound = sweeperlib.pyglet.media.load("sounds/box_breaking_sound.wav", streaming=False)
+duck_sound = sweeperlib.pyglet.media.load("sounds/duck_sound.wav", streaming=False)
+bounce_sound = sweeperlib.pyglet.media.load("sounds/bounce_sound.wav", streaming=False)
 
 game = {
     "x": LAUNCH_X,
