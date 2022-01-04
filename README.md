@@ -44,4 +44,4 @@ levels. In both game modes, the goal is to destroy the wooden boxes.
 - ↑/↓ or mouse drag: Set Force
 - Space or mouse release: Launch
 
-![Alt text](sprites/background.png "Background")
+![Alt text](screenshot.png "Screenshot")
